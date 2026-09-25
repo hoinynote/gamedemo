@@ -1,18 +1,17 @@
-# Current Context
+﻿# Current Context
 
 ## Active Plan
-[협동 로프 점프 게임](./plans/2026-09-21-cooperative-rope-game.md)
+[Rope Control Improvements](./plans/2026-09-25-rope-control-improvements.md)
 
 ## Active Phase
-[P01 플레이 가능한 게임](./phases/2026-09-21-cooperative-rope-game/P01-playable-game/phase.md)
+[P01 Rope Controls](./phases/2026-09-25-rope-control-improvements/P01-rope-controls/phase.md)
 
 ## Active Task
-- 없음 — T01/T02 구현 완료
+[T02 Eight-Way Rope Aim and Stronger Pull](./phases/2026-09-25-rope-control-improvements/P01-rope-controls/T02-rope-aim-and-force.md)
 
 ## Status
-- 게임 코어와 브라우저 뒤로가기 일시정지·체크포인트 구현 완료
-- 구조 검증 완료
-- Node.js·브라우저·Git 미설치로 런타임 검증 및 커밋은 보류
+- T01 physical-key controls, persisted rebinding, duplicate checks, and default restore are implemented.
+- Syntax and mock-DOM interaction validation passed. Visual browser validation was unavailable in this environment.
 
 ## Next Step (IMPORTANT)
-Node.js와 브라우저를 사용할 수 있는 환경에서 `node --check game.js` 및 실제 플레이·뒤로가기·새로고침 복원 시나리오를 검증한다.
+Read the T02 blueprint and implement eight-way rope aiming, stronger boosted tension, and checkpoint compatibility in `game.js`. Validate the task before completing the phase.

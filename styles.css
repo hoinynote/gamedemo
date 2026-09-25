@@ -76,8 +76,29 @@ canvas { display: block; width: 100%; height: 100%; image-rendering: auto; }
 
 kbd { display: inline-grid; place-items: center; min-width: 23px; height: 23px; padding: 0 5px; margin: 0 2px; color: #f7f8ff; font-size: 11px; font-weight: 800; border: 1px solid rgba(255, 255, 255, 0.24); border-bottom-width: 2px; border-radius: 6px; background: rgba(255, 255, 255, 0.12); }
 .primary-button { justify-self: center; margin-top: 6px; padding: 13px 20px; color: #07121e; font-weight: 800; border: 0; border-radius: 999px; background: linear-gradient(135deg, #85e4d5, #9ba5ff); cursor: pointer; box-shadow: 0 8px 30px rgba(91, 206, 202, 0.25); transition: transform 160ms ease, filter 160ms ease; }
-.primary-button:hover, .primary-button:focus-visible { filter: brightness(1.1); transform: translateY(-2px); outline: none; }
+.primary-button:hover, .primary-button:focus-visible { filter: brightness(1.1); transform: translateY(-2px); }
 .primary-button span { margin-left: 7px; opacity: 0.62; font-size: 11px; }
+.secondary-button, .binding-button { padding: 9px 14px; color: #eef0ff; font-weight: 700; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 10px; background: rgba(255, 255, 255, 0.08); cursor: pointer; }
+.secondary-button:hover, .binding-button:hover { background: rgba(255, 255, 255, 0.15); }
+button:focus-visible { outline: 2px solid #85e4d5; outline-offset: 2px; }
+.controls-screen { place-content: start center; overflow-y: auto; gap: 9px; padding: 4% 7%; }
+.controls-screen h2 { font-size: clamp(26px, 4vw, 38px); }
+.control-settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; max-width: 680px; margin: 2px auto; text-align: left; }
+.control-settings-player { min-width: 0; padding: 10px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; background: rgba(255, 255, 255, 0.045); }
+.control-settings-player h3 { margin: 0 0 7px; font-size: 11px; letter-spacing: 0.14em; }
+.control-settings-player > div { display: grid; gap: 4px; }
+.control-setting-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 7px; min-height: 31px; }
+.control-setting-label { color: #c6cce8; font-size: 12px; }
+.control-setting-status { grid-column: 1 / -1; min-height: 0; color: #c6cce8; font-size: 10px; line-height: 1.2; }
+.control-setting-status[data-state="error"] { color: #ffab8e; }
+.control-setting-status[data-state="success"] { color: #85e4d5; }
+.binding-button { min-width: 54px; padding: 4px 8px; font-size: 12px; }
+.binding-button.capturing { border-color: #85e4d5; color: #85e4d5; }
+.controls-status { min-height: 18px; color: #85e4d5; font-size: 12px; }
+.controls-status[data-state="error"] { color: #ffab8e; }
+.controls-status[data-state="pending"] { color: #c6cce8; }
+.controls-actions { display: flex; justify-content: center; gap: 10px; }
+.controls-actions .primary-button { margin-top: 0; padding: 9px 14px; }
 .footer-note { margin: 0; color: #65709e; text-align: center; font-size: 12px; }
 
 @media (max-width: 620px) {
@@ -86,4 +107,8 @@ kbd { display: inline-grid; place-items: center; min-width: 23px; height: 23px; 
   .controls-grid { grid-template-columns: 1fr; }
   .overlay { padding: 7%; gap: 10px; }
   .hint { font-size: 11px; }
+  .controls-screen { padding: 5%; }
+  .control-settings-grid { grid-template-columns: 1fr; gap: 7px; }
+  .control-settings-player { padding: 7px 9px; }
+  .control-settings-player > div { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; }
 }

@@ -18,15 +18,37 @@
           <div class="controls-grid">
             <div class="control-card player-one">
               <strong>PLAYER 1</strong>
-              <span><kbd>F</kbd><kbd>H</kbd> 이동 · <kbd>T</kbd> 점프 · <kbd>Q</kbd> 로프 · <kbd>W</kbd> 장력</span>
+              <span id="controls-summary-p1"></span>
             </div>
             <div class="control-card player-two">
               <strong>PLAYER 2</strong>
-              <span><kbd>←</kbd><kbd>→</kbd> 이동 · <kbd>↑</kbd> 점프 · <kbd>[</kbd> 로프 · <kbd>]</kbd> 장력</span>
+              <span id="controls-summary-p2"></span>
             </div>
           </div>
-          <p class="hint"><kbd>G</kbd> / <kbd>↓</kbd> 플랫폼 통과 · <kbd>R</kbd> 현재 스테이지 재시작</p>
+          <p class="hint"><kbd>R</kbd> 현재 스테이지 재시작</p>
+          <button id="controls-button" class="secondary-button" type="button">조작 설정</button>
           <button id="start-button" class="primary-button" type="button">게임 시작 <span>Enter</span></button>
+        </section>
+
+        <section id="controls-screen" class="overlay controls-screen" aria-live="polite">
+          <p class="eyebrow">CONTROLS</p>
+          <h2>조작 설정</h2>
+          <p class="hint">버튼을 누른 뒤 새 키를 누르세요. 두 플레이어는 서로 다른 키를 사용해야 합니다.</p>
+          <div class="control-settings-grid">
+            <section class="control-settings-player player-one">
+              <h3>PLAYER 1</h3>
+              <div data-control-list="p1"></div>
+            </section>
+            <section class="control-settings-player player-two">
+              <h3>PLAYER 2</h3>
+              <div data-control-list="p2"></div>
+            </section>
+          </div>
+          <p id="controls-status" class="controls-status" aria-live="polite"></p>
+          <div class="controls-actions">
+            <button id="controls-reset-button" class="secondary-button" type="button">기본값 복원</button>
+            <button id="controls-back-button" class="primary-button" type="button">돌아가기</button>
+          </div>
         </section>
 
         <section id="pause-screen" class="overlay" aria-live="polite">

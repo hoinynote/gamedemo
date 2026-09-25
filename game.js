@@ -14,6 +14,78 @@
     playerHeight: 48,
   };
 
+  const DEFAULT_CONTROLS = Object.freeze({
+    p1: Object.freeze({ left: "KeyF", right: "KeyH", jump: "KeyT", down: "KeyG", rope: "KeyQ", boost: "KeyW" }),
+    p2: Object.freeze({ left: "ArrowLeft", right: "ArrowRight", jump: "ArrowUp", down: "ArrowDown", rope: "BracketLeft", boost: "BracketRight" }),
+  });
+  const CONTROL_ACTIONS = ["left", "right", "jump", "down", "rope", "boost"];
+  const CONTROL_ACTION_LABELS = {
+    left: "왼쪽 이동", right: "오른쪽 이동", jump: "점프", down: "플랫폼 통과", rope: "로프 발사·해제", boost: "당기기 강화",
+  };
+  const RESERVED_CONTROL_CODES = new Set(["Enter", "Escape", "Tab", "KeyR", "KeyN"]);
+
+  function cloneDefaultControls() {
+    return {
+      p1: { ...DEFAULT_CONTROLS.p1 },
+      p2: { ...DEFAULT_CONTROLS.p2 },
+    };
+  }
+
+  function controlsAreValid(bindings) {
+    if (!bindings || !bindings.p1 || !bindings.p2) return false;
+    const assigned = [];
+    for (const player of ["p1", "p2"]) {
+      for (const action of CONTROL_ACTIONS) {
+        const code = bindings[player][action];
+        if (typeof code !== "string" || code.length === 0 || code === "Unidentified") return false;
+        assigned.push(code);
+      }
+    }
+    return new Set(assigned).size === assigned.length;
+  }
+
+  function controlCodeLabel(code) {
+    if (/^Key[A-Z]$/.test(code)) return code.slice(3);
+    if (/^Digit[0-9]$/.test(code)) return code.slice(5);
+    const labels = {
+      ArrowLeft: "←", ArrowRight: "→", ArrowUp: "↑", ArrowDown: "↓",
+      BracketLeft: "[", BracketRight: "]",
+    };
+    if (labels[code]) return labels[code];
+    if (code.startsWith("Numpad")) return `Num ${code.slice(6)}`;
+    return code;
+  }
+
+  class ControlsStore {
+    static get key() { return "ropebound-controls:v1"; }
+
+    static load() {
+      try {
+        const raw = window.localStorage.getItem(this.key);
+        if (!raw) return cloneDefaultControls();
+        const saved = JSON.parse(raw);
+        if (saved.version !== 1 || !controlsAreValid(saved.bindings)) return cloneDefaultControls();
+        return { p1: { ...saved.bindings.p1 }, p2: { ...saved.bindings.p2 } };
+      } catch (error) {
+        return cloneDefaultControls();
+      }
+    }
+
+    static save(bindings) {
+      try {
+        window.localStorage.setItem(this.key, JSON.stringify({ version: 1, bindings }));
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    static reset() {
+      try { window.localStorage.removeItem(this.key); } catch (error) { /* no-op */ }
+      return cloneDefaultControls();
+    }
+  }
+
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const lerp = (a, b, t) => a + (b - a) * t;
   const clone = (value) => JSON.parse(JSON.stringify(value));
@@ -120,20 +192,21 @@
       this.down = new Set();
       this.pressed = new Set();
       window.addEventListener("keydown", (event) => {
-        const key = this.normalize(event.key);
-        if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "[", "]"].includes(key)) event.preventDefault();
-        if (!event.repeat) this.pressed.add(key);
-        this.down.add(key);
+        const code = event.code;
+        if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "BracketLeft", "BracketRight", "Space"].includes(code)) event.preventDefault();
+        if (!event.repeat) this.pressed.add(code);
+        this.down.add(code);
       });
-      window.addEventListener("keyup", (event) => this.down.delete(this.normalize(event.key)));
+      window.addEventListener("keyup", (event) => this.down.delete(event.code));
+      window.addEventListener("blur", () => this.clear());
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) this.clear();
+      });
     }
 
-    normalize(key) {
-      return key.length === 1 ? key.toLowerCase() : key;
-    }
-
-    isDown(key) { return this.down.has(key); }
-    wasPressed(key) { return this.pressed.has(key); }
+    isDown(code) { return this.down.has(code); }
+    wasPressed(code) { return this.pressed.has(code); }
+    clear() { this.down.clear(); this.pressed.clear(); }
     endFrame() { this.pressed.clear(); }
   }
 
@@ -255,6 +328,9 @@
 
   class Game {
     constructor() {
+      this.controls = ControlsStore.load();
+      this.capturingBinding = null;
+      this.controlsOpen = false;
       this.input = new InputManager();
       this.audio = new AudioManager();
       this.mode = "menu";
@@ -270,10 +346,12 @@
       this.lastFrameAt = performance.now();
       this.pauseReason = "";
       this.historyController = new HistoryPauseController(this);
+      document.addEventListener("keydown", (event) => this.captureControlBinding(event), true);
       this.bindUI();
-      window.addEventListener("keydown", (event) => this.handleGlobalInput(this.input.normalize(event.key)));
+      window.addEventListener("keydown", (event) => this.handleGlobalInput(event));
       this.historyController.install();
       this.loadStage(0);
+      this.renderControls();
       const checkpoint = CheckpointStore.load();
       if (checkpoint) this.restore(checkpoint);
       requestAnimationFrame((timestamp) => this.frame(timestamp));
@@ -282,19 +360,142 @@
     bindUI() {
       document.querySelector("#start-button").addEventListener("click", () => this.startNewGame());
       document.querySelector("#continue-button").addEventListener("click", () => this.advanceStage());
+      document.querySelector("#controls-button").addEventListener("click", () => this.openControls());
+      document.querySelector("#controls-back-button").addEventListener("click", () => this.closeControls());
+      document.querySelector("#controls-reset-button").addEventListener("click", () => this.restoreDefaultControls());
     }
 
-    handleGlobalInput(key) {
-      if (key === "Enter") {
+    handleGlobalInput(event) {
+      if (this.capturingBinding || this.controlsOpen) return;
+      if (event.code === "Enter") {
         this.audio.unlock();
         if (this.mode === "menu") this.startNewGame();
         else if (this.mode === "paused") this.resume();
         else if (this.mode === "won") this.advanceStage();
       }
-      if (key === "r" && (this.mode === "playing" || this.mode === "paused")) this.resetStage();
-      if (key === "n" && this.mode === "won" && this.stageIndex >= STAGES.length - 1) {
+      if (event.code === "KeyR" && (this.mode === "playing" || this.mode === "paused")) this.resetStage();
+      if (event.code === "KeyN" && this.mode === "won" && this.stageIndex >= STAGES.length - 1) {
         CheckpointStore.clear();
         this.startNewGame();
+      }
+    }
+
+    openControls() {
+      this.capturingBinding = null;
+      this.controlsOpen = true;
+      this.input.clear();
+      this.renderControls();
+      this.showOverlay("#menu-screen", false);
+      this.showOverlay("#controls-screen", true);
+    }
+
+    closeControls() {
+      this.capturingBinding = null;
+      this.controlsOpen = false;
+      this.input.clear();
+      this.showOverlay("#controls-screen", false);
+      this.showOverlay("#menu-screen", this.mode === "menu");
+    }
+
+    beginControlCapture(player, action) {
+      if (!this.controls[player] || !CONTROL_ACTIONS.includes(action)) return;
+      this.capturingBinding = { player, action };
+      this.input.clear();
+      this.renderControls();
+      this.setControlStatus("키를 누르세요. Esc은 예약 키입니다.", "pending");
+    }
+
+    captureControlBinding(event) {
+      if (!this.capturingBinding) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.repeat) return;
+      const { player, action } = this.capturingBinding;
+      const code = event.code;
+      if (/^(Shift|Control|Alt|Meta)/.test(code) || !code || code === "Unidentified") return;
+      if (RESERVED_CONTROL_CODES.has(code)) {
+        this.setControlStatus(`${controlCodeLabel(code)} 키는 게임 조작에 예약되어 있습니다.`, "error");
+        return;
+      }
+      const duplicate = ["p1", "p2"].some((playerId) => CONTROL_ACTIONS.some((actionId) => (
+        this.controls[playerId][actionId] === code && !(playerId === player && actionId === action)
+      )));
+      if (duplicate) {
+        this.setControlStatus(`${controlCodeLabel(code)} 키는 이미 다른 동작에 배정되어 있습니다.`, "error");
+        return;
+      }
+
+      const nextControls = { p1: { ...this.controls.p1 }, p2: { ...this.controls.p2 } };
+      nextControls[player][action] = code;
+      this.controls = nextControls;
+      const saved = ControlsStore.save(this.controls);
+      const capturedBinding = this.capturingBinding;
+      this.capturingBinding = null;
+      this.input.clear();
+      this.renderControls();
+      this.setControlStatus(saved ? "조작 키를 저장했습니다." : "키는 변경했지만 브라우저 저장에 실패했습니다.", saved ? "success" : "error", capturedBinding);
+    }
+
+    restoreDefaultControls() {
+      this.capturingBinding = null;
+      this.input.clear();
+      this.controls = ControlsStore.reset();
+      this.renderControls();
+      this.setControlStatus("기본 조작 키로 복원했습니다.", "success");
+    }
+
+    setControlStatus(message, state = "", target = this.capturingBinding) {
+      const status = document.querySelector("#controls-status");
+      status.textContent = message;
+      status.dataset.state = state;
+      document.querySelectorAll(".control-setting-status").forEach((item) => {
+        item.textContent = "";
+        item.dataset.state = "";
+      });
+      if (target) {
+        const rowStatus = document.querySelector(`[data-control-status-player="${target.player}"][data-control-status-action="${target.action}"]`);
+        if (rowStatus) {
+          rowStatus.textContent = message;
+          rowStatus.dataset.state = state;
+        }
+      }
+    }
+
+    renderControls() {
+      for (const player of ["p1", "p2"]) {
+        const summary = document.querySelector(`#controls-summary-${player}`);
+        if (summary) {
+          const controls = this.controls[player];
+          summary.textContent = `${controlCodeLabel(controls.left)}/${controlCodeLabel(controls.right)} 이동 · ${controlCodeLabel(controls.jump)} 점프 · ${controlCodeLabel(controls.down)} 플랫폼 통과 · ${controlCodeLabel(controls.rope)} 로프 · ${controlCodeLabel(controls.boost)} 당기기`;
+        }
+        const list = document.querySelector(`[data-control-list="${player}"]`);
+        if (!list) continue;
+        list.replaceChildren();
+        for (const action of CONTROL_ACTIONS) {
+          const row = document.createElement("div");
+          row.className = "control-setting-row";
+          const label = document.createElement("span");
+          label.className = "control-setting-label";
+          label.textContent = CONTROL_ACTION_LABELS[action];
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "binding-button";
+          button.dataset.player = player;
+          button.dataset.action = action;
+          button.textContent = this.capturingBinding?.player === player && this.capturingBinding.action === action
+            ? "키 입력 대기…"
+            : controlCodeLabel(this.controls[player][action]);
+          button.setAttribute("aria-label", `${player === "p1" ? "플레이어 1" : "플레이어 2"} ${CONTROL_ACTION_LABELS[action]} 키 변경`);
+          button.classList.toggle("capturing", this.capturingBinding?.player === player && this.capturingBinding.action === action);
+          button.addEventListener("click", () => this.beginControlCapture(player, action));
+          const status = document.createElement("span");
+          status.className = "control-setting-status";
+          status.dataset.controlStatusPlayer = player;
+          status.dataset.controlStatusAction = action;
+          row.append(label, button);
+          row.append(status);
+          list.append(row);
+        }
       }
     }
 
@@ -491,8 +692,7 @@
     }
 
     getControls(player) {
-      if (player.id === 1) return { left: "f", right: "h", jump: "t", down: "g", rope: "q", boost: "w" };
-      return { left: "ArrowLeft", right: "ArrowRight", jump: "ArrowUp", down: "ArrowDown", rope: "[", boost: "]" };
+      return this.controls[player.id === 1 ? "p1" : "p2"];
     }
 
     updatePlayers(delta) {
