@@ -8,4 +8,4 @@ Improve the two-player rope controls in the Canvas game. While a rope is stretch
 
 | Phase | Status | Summary | Blueprint |
 | :--- | :--- | :--- | :--- |
-| P01 | `in_progress` | Add physical-key input and persisted player-specific rebinding, then implement eight-way rope aiming and stronger boosted tension. | [P01](../phases/2026-09-25-rope-control-improvements/P01-rope-controls/phase.md) |
+| P01 | `done` | Add physical-key input and persisted player-specific rebinding, then implement eight-way rope aiming and stronger boosted tension. | [P01](../phases/2026-09-25-rope-control-improvements/P01-rope-controls/phase.md) |

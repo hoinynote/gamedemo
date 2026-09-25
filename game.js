@@ -10,6 +10,8 @@
     maxSpeed: 310,
     friction: 0.78,
     jumpSpeed: 650,
+    ropeTensionAcceleration: 7,
+    ropeBoostAcceleration: 360,
     playerWidth: 30,
     playerHeight: 48,
   };
@@ -497,6 +499,10 @@
           list.append(row);
         }
       }
+      const ropeHelp = document.querySelector("#rope-control-help");
+      if (ropeHelp) {
+        ropeHelp.textContent = `방향 키와 로프 키를 함께 누르면 8방향으로 발사합니다. 방향 입력이 없으면 바라보는 쪽으로 발사하고, 당기기 키(${controlCodeLabel(this.controls.p1.boost)} / ${controlCodeLabel(this.controls.p2.boost)})를 누르는 동안 힘이 강해집니다.`;
+      }
     }
 
     startNewGame() {
@@ -590,7 +596,7 @@
           originY: rope.originY,
           headX: rope.headX,
           headY: rope.headY,
-          direction: rope.direction,
+          direction: { ...rope.direction },
           currentLength: rope.currentLength,
           tension: rope.tension,
           boostLevel: rope.boostLevel,
@@ -625,7 +631,7 @@
             state: ["idle", "flying", "attached"].includes(saved.state) ? saved.state : "idle",
             originX: saved.originX || 0, originY: saved.originY || 0,
             headX: saved.headX || 0, headY: saved.headY || 0,
-            direction: saved.direction === -1 ? -1 : 1,
+            direction: this.normalizeRopeDirection(saved.direction),
             currentLength: saved.currentLength || 0, tension: saved.tension || 0,
             boostLevel: saved.boostLevel || 0, targetPlayerId: saved.targetPlayerId || null,
           });
@@ -658,7 +664,7 @@
         originY: 0,
         headX: 0,
         headY: 0,
-        direction: 1,
+        direction: { x: 1, y: 0 },
         speed: 900,
         maxLength: 280,
         currentLength: 0,
@@ -666,6 +672,14 @@
         boostLevel: 0,
         targetPlayerId: null,
       };
+    }
+
+    normalizeRopeDirection(direction) {
+      if (direction === -1 || direction === 1) return { x: direction, y: 0 };
+      if (!direction || !Number.isFinite(direction.x) || !Number.isFinite(direction.y)) return { x: 1, y: 0 };
+      const magnitude = Math.hypot(direction.x, direction.y);
+      if (!Number.isFinite(magnitude) || magnitude === 0) return { x: 1, y: 0 };
+      return { x: direction.x / magnitude, y: direction.y / magnitude };
     }
 
     frame(timestamp) {
@@ -693,6 +707,14 @@
 
     getControls(player) {
       return this.controls[player.id === 1 ? "p1" : "p2"];
+    }
+
+    getRopeAim(owner, controls) {
+      const x = (this.input.isDown(controls.right) ? 1 : 0) - (this.input.isDown(controls.left) ? 1 : 0);
+      const y = (this.input.isDown(controls.down) ? 1 : 0) - (this.input.isDown(controls.jump) ? 1 : 0);
+      if (x === 0 && y === 0) return { x: owner.facing, y: 0 };
+      const magnitude = Math.hypot(x, y);
+      return { x: x / magnitude, y: y / magnitude };
     }
 
     updatePlayers(delta) {
@@ -806,21 +828,30 @@
         const owner = this.players[rope.ownerId - 1];
         const target = this.players.find((player) => player.id !== rope.ownerId);
         const controls = this.getControls(owner);
-        if (this.input.wasPressed(controls.rope)) this.fireOrToggleRope(rope, owner);
+        if (this.input.wasPressed(controls.rope)) this.fireOrToggleRope(rope, owner, controls);
         if (rope.state === "idle") continue;
         if (rope.state === "flying") {
-          rope.headX += rope.direction * rope.speed * delta;
-          rope.headY = rope.originY;
-          rope.currentLength = Math.abs(rope.headX - rope.originX);
-          if (rope.currentLength > rope.maxLength || this.getSolids().some((solid) => pointInRect({ x: rope.headX, y: rope.headY }, solid, 2))) {
-            rope.state = "idle";
-            continue;
+          const travelDistance = rope.speed * delta;
+          const steps = Math.max(1, Math.ceil(travelDistance / 8));
+          const stepX = rope.direction.x * travelDistance / steps;
+          const stepY = rope.direction.y * travelDistance / steps;
+          const solids = this.getSolids();
+          for (let step = 0; step < steps; step += 1) {
+            rope.headX += stepX;
+            rope.headY += stepY;
+            rope.currentLength = distance({ x: rope.headX, y: rope.headY }, { x: rope.originX, y: rope.originY });
+            if (rope.currentLength > rope.maxLength || solids.some((solid) => pointInRect({ x: rope.headX, y: rope.headY }, solid, 2))) {
+              rope.state = "idle";
+              break;
+            }
+            if (pointInRect({ x: rope.headX, y: rope.headY }, target.bounds, 10)) {
+              rope.state = "attached";
+              rope.targetPlayerId = target.id;
+              this.audio.attach();
+              break;
+            }
           }
-          if (pointInRect({ x: rope.headX, y: rope.headY }, target.bounds, 10)) {
-            rope.state = "attached";
-            rope.targetPlayerId = target.id;
-            this.audio.attach();
-          }
+          if (rope.state === "idle") continue;
         }
         if (rope.state === "attached") {
           const ownerCenter = owner.center;
@@ -834,7 +865,7 @@
           if (rope.tension > 0) {
             const dx = (targetCenter.x - ownerCenter.x) / Math.max(rope.currentLength, 1);
             const dy = (targetCenter.y - ownerCenter.y) / Math.max(rope.currentLength, 1);
-            const force = (rope.tension * 7 + 90 * rope.boostLevel) * delta;
+            const force = (rope.tension * PHYSICS.ropeTensionAcceleration + PHYSICS.ropeBoostAcceleration * rope.boostLevel) * delta;
             owner.vx += dx * force;
             owner.vy += dy * force;
             target.vx -= dx * force;
@@ -844,7 +875,7 @@
       }
     }
 
-    fireOrToggleRope(rope, owner) {
+    fireOrToggleRope(rope, owner, controls) {
       if (rope.state !== "idle") {
         rope.state = "idle";
         rope.tension = 0;
@@ -858,7 +889,7 @@
       rope.originY = start.y;
       rope.headX = start.x;
       rope.headY = start.y;
-      rope.direction = owner.facing;
+      rope.direction = this.getRopeAim(owner, controls);
       rope.currentLength = 0;
       rope.tension = 0;
       rope.targetPlayerId = null;

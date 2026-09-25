@@ -1,6 +1,6 @@
 # Task: T02 Eight-Way Rope Aim and Stronger Pull
 
-## Status: pending
+## Status: done
 
 ## Goal
 
@@ -24,7 +24,7 @@ Use each owner's held directional controls at the rope-fire frame to launch towa
 - Change `Rope.direction` from a scalar `-1|1` to a unit vector `{x: number, y: number}`. Initialize it to `{x: 1, y: 0}` in `Game.makeRope`.
 - Add a launch-direction helper with signature `getRopeAim(owner: Player, controls: PlayerControls): {x: number, y: number}`. Calculate `x = isDown(right) - isDown(left)` and `y = isDown(down) - isDown(jump)`. If both are zero, return `{x: owner.facing, y: 0}`. Otherwise normalize `(x,y)` by its Euclidean length. Opposite directions cancel on their axis; all eight non-zero combinations are supported.
 - When `updateRopes` sees the owner's rope key edge, call `fireOrToggleRope(rope, owner, controls)`. Change `fireOrToggleRope` signature to accept `controls`; if toggling an active rope off, keep existing detach behavior. When firing from idle, store `this.getRopeAim(owner, controls)` in `rope.direction`.
-- For a flying rope, update both coordinates by the unit vector: `headX += direction.x * speed * delta`, `headY += direction.y * speed * delta`. Compute `currentLength = Math.hypot(headX - originX, headY - originY)`. Continue using `maxLength`, solid collision, and target-player collision checks. Keep origin, target attachment, audio, and rope toggle behavior unchanged.
+- For a flying rope, move along the unit vector in substeps no longer than 8 world pixels so thin platforms and diagonal targets cannot be skipped between frames. Each substep updates both head coordinates, recomputes `currentLength = Math.hypot(headX - originX, headY - originY)`, and applies the existing max-length, solid, and target-player collision checks. Keep origin, target attachment, audio, and rope toggle behavior unchanged.
 - For an attached rope, keep the current center-to-center normalized pull direction and equal-and-opposite velocities. Compute `force = (rope.tension * PHYSICS.ropeTensionAcceleration + PHYSICS.ropeBoostAcceleration * rope.boostLevel) * delta`; keep `boostLevel` at 1 only while the owner's configured boost code is held. The boost acceleration is four times the previous 90 value; do not apply boosted force when tension is zero.
 
 ### I02. Checkpoint compatibility and in-game instructions
@@ -72,6 +72,7 @@ Task: T02-rope-aim-and-force
 
 ## Progress
 
-- [ ] Implementation complete
-- [ ] Validation passed
+- [x] Implementation complete
+- [x] Validation passed: `node --check game.js`, the specified `rg` inspection, eight-direction/facing/force/checkpoint mock-DOM checks, wall substep collision, and diagonal target attachment.
+- [ ] Visual browser validation: unavailable because no controllable or installed browser is present in this environment.
 - commit: pending
