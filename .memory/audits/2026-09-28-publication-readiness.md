@@ -2,7 +2,7 @@
 
 - Repository: `hoinynote/gamedemo`
 - Date: 2026-09-28
-- Result: **blocked**
+- Result: **accepted for publication** (user explicitly chose to disclose the existing author-email metadata on 2026-09-28)
 - Scope reviewed: all 22 Git-tracked files, all 3 commits reachable before the audit commit, the audit commit itself, and the new deployment decision/plan documents intended for later commits.
 - Local-only directories `.agents/` and `.codeburn/` were not included; they remain untracked and will not be sent by Git unless explicitly added.
 
@@ -14,4 +14,4 @@
 
 ## Release gate
 
-Do not publish the repository or push these commits to a public remote until the author-email exposure is resolved. This report intentionally omits the addresses. Updating GitHub privacy settings alone does not change addresses already embedded in commit objects; any history rewrite or publication with the current metadata needs an explicit decision. T02 branding work can proceed independently, but T03 must remain blocked until this finding is resolved.
+The author-email metadata is not a secret-token finding; its disclosure risk was recorded without retaining the addresses. On 2026-09-28, the user explicitly chose to publish the repository with these existing author addresses visible. This records informed acceptance of the exposure; no Git history rewrite is requested. Proceed with the previously selected publication plan, preserve remote history, and never print or copy the addresses into project documentation.

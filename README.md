@@ -26,12 +26,11 @@
 
 시작 화면의 **조작 설정**에서 두 플레이어의 키를 바꿀 수 있습니다. 설정은 이 브라우저에 저장됩니다.
 
-## 웹 배포
+## 웹에서 플레이
 
-GitHub Pages 배포 예정 주소: `https://hoinynote.github.io/gamedemo/`
+[터그메이트 플레이](https://hoinynote.github.io/gamedemo/)
 
-저장소 공개와 Pages 설정이 완료되면 이 주소에서 플레이할 수 있습니다. Pages가 활성화된 뒤에는 `main` 브랜치에 변경을 올릴 때마다 사이트가 자동으로 갱신됩니다.
-
+`main` 브랜치에 변경을 올리면 GitHub Pages가 사이트를 자동으로 갱신합니다.
 ## 기술 정보
 
 게임은 정적 HTML, CSS, JavaScript로 구성되어 있으며, 별도 빌드 도구나 서버가 필요하지 않습니다. 주요 파일은 `index.html`, `styles.css`, `game.js`입니다.
