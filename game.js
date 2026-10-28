@@ -336,6 +336,7 @@
       this.controls = ControlsStore.load();
       this.capturingBinding = null;
       this.controlsOpen = false;
+      this.controlsReturnTo = "#menu-screen";
       this.input = new InputManager();
       this.audio = new AudioManager();
       this.mode = "menu";
@@ -368,10 +369,19 @@
       document.querySelector("#controls-button").addEventListener("click", () => this.openControls());
       document.querySelector("#controls-back-button").addEventListener("click", () => this.closeControls());
       document.querySelector("#controls-reset-button").addEventListener("click", () => this.restoreDefaultControls());
+      document.querySelector("#pause-controls-button").addEventListener("click", () => this.openControls("#pause-screen"));
+      document.querySelector("#pause-resume-button").addEventListener("click", () => this.resume());
+      document.querySelector("#pause-menu-button").addEventListener("click", () => this.returnToMenu());
     }
 
     handleGlobalInput(event) {
       if (this.capturingBinding || this.controlsOpen) return;
+      if (event.code === "Escape" && (this.mode === "playing" || this.mode === "paused")) {
+        event.preventDefault();
+        if (this.mode === "playing") this.pause("manual");
+        else this.resume();
+        return;
+      }
       if (event.code === "Enter") {
         this.audio.unlock();
         if (this.mode === "menu") this.startNewGame();
@@ -385,12 +395,14 @@
       }
     }
 
-    openControls() {
+    openControls(returnTo = "#menu-screen") {
       this.capturingBinding = null;
       this.controlsOpen = true;
+      this.controlsReturnTo = returnTo;
       this.input.clear();
       this.renderControls();
       this.showOverlay("#menu-screen", false);
+      this.showOverlay("#pause-screen", false);
       this.showOverlay("#controls-screen", true);
     }
 
@@ -399,7 +411,8 @@
       this.controlsOpen = false;
       this.input.clear();
       this.showOverlay("#controls-screen", false);
-      this.showOverlay("#menu-screen", this.mode === "menu");
+      this.showOverlay(this.controlsReturnTo, true);
+      this.renderUI();
     }
 
     beginControlCapture(player, action) {
@@ -570,6 +583,14 @@
       this.pauseReason = "";
       this.lastFrameAt = performance.now();
       this.historyController.arm();
+    }
+
+    returnToMenu() {
+      if (this.mode !== "paused") return;
+      this.saveCheckpoint();
+      this.mode = "menu";
+      this.pauseReason = "";
+      this.input.clear();
     }
 
     saveCheckpoint() {
@@ -1129,7 +1150,7 @@
 
     renderUI() {
       this.showOverlay("#menu-screen", this.mode === "menu");
-      this.showOverlay("#pause-screen", this.mode === "paused");
+      this.showOverlay("#pause-screen", this.mode === "paused" && !this.controlsOpen);
       this.showOverlay("#clear-screen", this.mode === "won");
       if (this.mode === "paused") {
         const messages = {

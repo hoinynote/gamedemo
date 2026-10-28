@@ -1,16 +1,17 @@
 ﻿# Current Context
 
 ## Active Plan
-[Directional Throw Balance](./plans/2026-10-28-directional-throw-balance.md)
+[Pause and Controls Menu](./plans/2026-10-28-pause-controls-menu.md)
 
 ## Active Phase
-[P01 Axis Impulses](./phases/2026-10-28-directional-throw-balance/P01-axis-impulses/phase.md)
+[P01 Pause Controls Flow](./phases/2026-10-28-pause-controls-menu/P01-pause-controls-flow/phase.md)
 
 ## Active Task
 - None — all planned tasks are complete.
 
 ## Status
-- Horizontal throw impulse is 700px/s and vertical throw impulse is 1100px/s. `node --check game.js` and the axis-force inspection passed.
+- Escape pauses/resumes; the pause menu exposes continue, controls, and return to title. Controls return to the screen that opened them. `node --check game.js` and `git diff --check` passed.
 
 ## Next Step (IMPORTANT)
 All tasks in this plan are complete.
+
