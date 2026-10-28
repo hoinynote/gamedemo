@@ -12,9 +12,20 @@
         <canvas id="game-canvas" width="960" height="540" aria-label="협동 로프 점프 게임"></canvas>
 
         <section id="auth-screen" class="overlay visible" aria-labelledby="auth-title" aria-live="polite">
+          <div class="title-mark" aria-hidden="true">
+            <svg viewBox="0 0 160 112" role="presentation">
+              <path d="M18 76 C42 8 114 8 142 76" />
+              <path d="M30 78 C54 30 105 28 130 78" />
+              <circle cx="18" cy="76" r="7" /><circle cx="142" cy="76" r="7" />
+              <circle cx="56" cy="66" r="10" class="title-player-one" />
+              <circle cx="104" cy="66" r="10" class="title-player-two" />
+            </svg>
+          </div>
+          <p class="title-kicker">TWO PLAYERS · ONE ROPE · EVERYONE HOME</p>
           <p class="eyebrow">TUGMATE · COMPANY CO-OP</p>
           <h1 id="auth-title">함께 당기고, 함께 도약하세요</h1>
           <p class="lead">두 플레이어가 로프로 협력해 각 구역의 출구를 찾아가요.</p>
+          <p class="title-promise">동료와 함께 던지고, 당기고, 미지의 구역을 열어보세요.</p>
           <button id="start-button" class="primary-button" type="button" disabled>회사 계정으로 시작</button>
           <button id="local-preview-button" class="secondary-button" type="button" hidden>로컬 미리보기</button>
           <p id="auth-status" class="menu-status" aria-live="polite">회사 로그인 설정을 확인하고 있습니다.</p>
@@ -32,7 +43,10 @@
               <h2 id="stage-map-title">스테이지 진행도</h2>
               <p>출구에 도착해 다음 구역을 열어보세요.</p>
             </div>
-            <div id="stage-map" class="stage-map" role="list" aria-label="스테이지 진행도"></div>
+          <div class="stage-map-legend" aria-label="진행 상태">
+            <span data-state="completed">완료</span><span data-state="current">현재</span><span data-state="locked">잠김</span>
+          </div>
+          <div id="stage-map" class="stage-map" role="list" aria-label="스테이지 진행도"></div>
           </section>
           <div class="menu-actions">
             <button id="continue-run-button" class="primary-button" type="button" hidden>이어하기 <span>Enter</span></button>

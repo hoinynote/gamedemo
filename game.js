@@ -1893,6 +1893,42 @@
       const map = document.querySelector("#stage-map");
       if (!map) return;
       map.replaceChildren();
+      const svgNamespace = "http://www.w3.org/2000/svg";
+      const route = document.createElementNS(svgNamespace, "svg");
+      route.setAttribute("class", "stage-map-route");
+      route.setAttribute("viewBox", "0 0 100 100");
+      route.setAttribute("preserveAspectRatio", "none");
+      route.setAttribute("aria-hidden", "true");
+      const routePath = "M 25 23 C 44 15 56 15 75 23 C 88 34 84 50 69 58 C 54 66 39 66 25 77 C 38 87 57 87 75 77";
+      const defs = document.createElementNS(svgNamespace, "defs");
+      const gradient = document.createElementNS(svgNamespace, "linearGradient");
+      gradient.id = "map-route-gradient";
+      gradient.innerHTML = '<stop offset="0" stop-color="#8cf8e3"/><stop offset=".52" stop-color="#91baff"/><stop offset="1" stop-color="#d19bff"/>';
+      defs.append(gradient);
+      route.append(defs);
+      const basePath = document.createElementNS(svgNamespace, "path");
+      basePath.setAttribute("d", routePath);
+      basePath.setAttribute("class", "map-route-base");
+      route.append(basePath);
+      const activePath = document.createElementNS(svgNamespace, "path");
+      activePath.setAttribute("d", routePath);
+      activePath.setAttribute("class", "map-route-active");
+      activePath.setAttribute("pathLength", "1000");
+      activePath.style.strokeDasharray = "1000";
+      activePath.style.strokeDashoffset = String(1000 * (1 - this.campaignProgress.clearedStageIds.length / 3));
+      route.append(activePath);
+      const routeNodes = [
+        { x: 25, y: 23 }, { x: 75, y: 23 }, { x: 25, y: 77 }, { x: 75, y: 77 },
+      ];
+      for (const [stageId, position] of routeNodes.entries()) {
+        const beacon = document.createElementNS(svgNamespace, "circle");
+        beacon.setAttribute("cx", position.x);
+        beacon.setAttribute("cy", position.y);
+        beacon.setAttribute("r", stageId === 3 ? 3.2 : 2.6);
+        beacon.setAttribute("class", `map-route-beacon ${this.getStageProgressStatus(stageId)}`);
+        route.append(beacon);
+      }
+      map.append(route);
       const statusLabels = {
         completed: "클리어",
         current: "현재 도전",
@@ -1915,9 +1951,16 @@
         card.disabled = state === "locked";
         card.setAttribute("aria-disabled", String(card.disabled));
 
+        const heading = document.createElement("span");
+        heading.className = "stage-card-heading";
+        const icon = document.createElement("span");
+        icon.className = "stage-card-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.textContent = ["☀", "≈", "⌃", "✦"][stage.id] || "◆";
         const title = document.createElement("strong");
         title.className = "stage-card-title";
         title.textContent = stage.card.name;
+        heading.append(icon, title);
         const objective = document.createElement("span");
         objective.className = "stage-card-objective";
         objective.textContent = stage.card.objective;
@@ -1932,7 +1975,7 @@
         status.textContent = statusLabels[state];
 
         card.setAttribute("aria-label", title.textContent + ". " + objective.textContent + ". " + status.textContent + ".");
-        card.append(title, objective, gimmick, meta, status);
+        card.append(heading, objective, gimmick, meta, status);
         if (state === "locked") {
           const hint = document.createElement("span");
           hint.className = "stage-card-hint";

@@ -1,6 +1,6 @@
 # Task: T01 Title and Holographic Map
 
-## Status: pending
+## Status: done
 
 ## Goal
 Visually separate the public game introduction from the stage selection screen and replace the simple card grid with an illustrated, neon holographic progression map.
@@ -34,10 +34,10 @@ Visually separate the public game introduction from the stage selection screen a
   - On narrow screens, route and cards stack vertically with no horizontal overflow. Respect `prefers-reduced-motion`.
 
 ## Acceptance Criteria
-- [ ] Title and stage map are visibly separate states with only the intended title CTA.
-- [ ] Holographic route communicates stage order and status while all existing stage actions still work.
-- [ ] Stage name/objective/gimmick/difficulty/time/hint remain readable on mobile and desktop.
-- [ ] Reduced-motion preference removes continuous map animation.
+- [x] Title and stage map are visibly separate states with only the intended title CTA.
+- [x] Holographic route communicates stage order and status while all existing stage actions still work.
+- [x] Stage name/objective/gimmick/difficulty/time/hint remain readable on mobile and desktop.
+- [x] Reduced-motion preference removes continuous map animation.
 
 ## Validation
 - `node --check game.js`
@@ -57,6 +57,6 @@ Task: T01-title-and-holographic-map
 ```
 
 ## Progress
-- [ ] Implementation complete
-- [ ] Validation passed
-- commit: pending
+- [x] Implementation complete
+- [x] Validation passed
+- commit: `8652647`
