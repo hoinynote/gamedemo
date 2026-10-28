@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>터그메이트 | 2인 협동 로프 게임</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <div class="game-frame">
+        <canvas id="game-canvas" width="960" height="540" aria-label="협동 로프 점프 게임"></canvas>
+
+        <section id="menu-screen" class="overlay visible" aria-live="polite">
+          <p class="eyebrow">터그메이트</p>
+          <h1>함께 당기고, 함께 도착하세요</h1>
+          <p class="lead">두 명이 서로에게 로프를 발사하고 장력을 이용해 절벽과 퍼즐을 넘어갑니다.</p>
+          <div class="controls-grid">
+            <div class="control-card player-one">
+              <strong>PLAYER 1</strong>
+              <span id="controls-summary-p1"></span>
+            </div>
+            <div class="control-card player-two">
+              <strong>PLAYER 2</strong>
+              <span id="controls-summary-p2"></span>
+            </div>
+          </div>
+          <p id="rope-control-help" class="hint"></p>
+          <p class="hint"><kbd>R</kbd> 현재 스테이지 재시작</p>
+          <button id="controls-button" class="secondary-button" type="button">조작 설정</button>
+          <button id="start-button" class="primary-button" type="button">게임 시작 <span>Enter</span></button>
+        </section>
+
+        <section id="controls-screen" class="overlay controls-screen" aria-live="polite">
+          <p class="eyebrow">CONTROLS</p>
+          <h2>조작 설정</h2>
+          <p class="hint">버튼을 누른 뒤 새 키를 누르세요. 입력은 키보드의 물리 키 코드로 구분하며, 두 플레이어의 조작 키를 바꿀 수 있습니다. 설정은 이 브라우저에 저장되고, 이미 배정된 키나 게임 예약 키는 사용할 수 없습니다.</p>
+          <div class="control-settings-grid">
+            <section class="control-settings-player player-one">
+              <h3>PLAYER 1</h3>
+              <div data-control-list="p1"></div>
+            </section>
+            <section class="control-settings-player player-two">
+              <h3>PLAYER 2</h3>
+              <div data-control-list="p2"></div>
+            </section>
+          </div>
+          <p id="controls-status" class="controls-status" aria-live="polite"></p>
+          <div class="controls-actions">
+            <button id="controls-reset-button" class="secondary-button" type="button">기본값 복원</button>
+            <button id="controls-back-button" class="primary-button" type="button">돌아가기</button>
+          </div>
+        </section>
+
+        <section id="pause-screen" class="overlay" aria-live="polite">
+          <p class="eyebrow">PAUSED</p>
+          <h2>잠시 멈췄어요</h2>
+          <p id="pause-message" class="lead">진행 상태를 저장했습니다.</p>
+          <p class="hint"><kbd>Enter</kbd> 계속하기 · <kbd>R</kbd> 스테이지 재시작</p>
+          <p class="hint"><kbd>Escape</kbd> 일시정지 / 재개</p>
+          <div class="pause-actions">
+            <button id="pause-resume-button" class="primary-button" type="button">계속하기</button>
+            <button id="pause-controls-button" class="secondary-button" type="button">조작 설정</button>
+            <button id="pause-menu-button" class="secondary-button" type="button">메인 화면</button>
+          </div>
+        </section>
+
+        <section id="clear-screen" class="overlay" aria-live="polite">
+          <p class="eyebrow">STAGE CLEAR</p>
+          <h2 id="clear-title">좋은 협동이에요!</h2>
+          <p id="clear-message" class="lead">다음 구역으로 이동합니다.</p>
+          <button id="continue-button" class="primary-button" type="button">다음 스테이지 <span>Enter</span></button>
+        </section>
+      </div>
+      <p class="footer-note">브라우저 뒤로가기나 탭 전환 시 게임은 자동으로 일시정지되고 진행 상태가 저장됩니다.</p>
+    </main>
+    <script src="game.js"></script>
+  </body>
+</html>
