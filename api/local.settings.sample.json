@@ -1,0 +1,17 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "ENTRA_TENANT_ID": "",
+    "ENTRA_CLIENT_ID": "",
+    "ENTRA_API_AUDIENCE": "",
+    "ENTRA_API_SCOPE": "",
+    "COSMOS_API_KIND": "",
+    "COSMOS_ENDPOINT": "",
+    "COSMOS_KEY": "",
+    "COSMOS_DATABASE_ID": "",
+    "COSMOS_CONTAINER_ID": "",
+    "COSMOS_TABLE_CONNECTION_STRING": "",
+    "COSMOS_TABLE_NAME": ""
+  }
+}

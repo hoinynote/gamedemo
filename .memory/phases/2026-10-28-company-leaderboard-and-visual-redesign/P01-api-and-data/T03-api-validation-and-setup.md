@@ -1,6 +1,6 @@
 # Task: T03 API Validation and Setup
 
-## Status: pending
+## Status: done
 
 ## Goal
 Cover API validation and repository behavior with automated tests, and document tenant app registration plus safe, read-only-first Cosmos Cloud Shell setup.
@@ -58,6 +58,6 @@ Task: T03-api-validation-and-setup
 ```
 
 ## Progress
-- [ ] Implementation complete
-- [ ] Validation passed
+- [x] Implementation complete
+- [x] Validation passed (`npm.cmd run check`, `npm.cmd test` — 19 passed, Bash syntax check, sample JSON parse, `git diff --check`)
 - commit: pending

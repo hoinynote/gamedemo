@@ -4,10 +4,10 @@ const { getConfig, getRepository } = require("../app-state");
 const { emptyProfile, normalizeProfile } = require("../profiles");
 const { HttpError, handle, json } = require("../http");
 
-async function getMe(request) {
-  const config = getConfig();
-  const principal = await getPrincipal(request, config);
-  const store = getRepository(config);
+async function getMe(request, deps = {}) {
+  const config = (deps.getConfig || getConfig)();
+  const principal = await (deps.getPrincipal || getPrincipal)(request, config);
+  const store = (deps.getRepository || getRepository)(config);
   const current = await store.get(principal.tenantId, principal.objectId);
   const profile = current
     ? normalizeProfile({ ...current, displayName: principal.displayName })
@@ -16,10 +16,10 @@ async function getMe(request) {
   return json(200, { profile: toPublicProfile(saved) });
 }
 
-async function deleteMe(request) {
-  const config = getConfig();
-  const principal = await getPrincipal(request, config);
-  await getRepository(config).delete(principal.tenantId, principal.objectId);
+async function deleteMe(request, deps = {}) {
+  const config = (deps.getConfig || getConfig)();
+  const principal = await (deps.getPrincipal || getPrincipal)(request, config);
+  await (deps.getRepository || getRepository)(config).delete(principal.tenantId, principal.objectId);
   return json(200, { deleted: true });
 }
 

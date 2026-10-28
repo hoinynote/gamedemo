@@ -4,16 +4,16 @@ const { getConfig, getRepository } = require("../app-state");
 const { MAX_CLEAR_MS, MIN_CLEAR_MS, mergeClear, normalizeProfile } = require("../profiles");
 const { HttpError, handle, json, parseJson } = require("../http");
 
-async function submitClear(request) {
-  const config = getConfig();
-  const principal = await getPrincipal(request, config);
+async function submitClear(request, deps = {}) {
+  const config = (deps.getConfig || getConfig)();
+  const principal = await (deps.getPrincipal || getPrincipal)(request, config);
   const body = await parseJson(request);
   if (!Number.isInteger(body.stageId) || body.stageId < 0 || body.stageId > 3
     || !Number.isInteger(body.elapsedMs) || body.elapsedMs < MIN_CLEAR_MS || body.elapsedMs > MAX_CLEAR_MS
     || typeof body.partnerName !== "string" || body.partnerName.trim().length < 1 || body.partnerName.trim().length > 40) {
     throw new HttpError(400, "invalid_clear", "완료 시간 또는 팀 이름이 올바르지 않습니다.");
   }
-  const store = getRepository(config);
+  const store = (deps.getRepository || getRepository)(config);
   const current = await store.get(principal.tenantId, principal.objectId);
   if (!current) throw new HttpError(409, "profile_required", "먼저 게임 지도를 열어 계정을 등록해 주세요.");
   const profile = normalizeProfile({ ...current, displayName: principal.displayName });

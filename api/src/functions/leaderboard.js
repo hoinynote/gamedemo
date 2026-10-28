@@ -4,12 +4,12 @@ const { getConfig, getRepository } = require("../app-state");
 const { VALID_STAGE_IDS } = require("../profiles");
 const { HttpError, handle, json } = require("../http");
 
-async function readLeaderboard(request) {
-  const config = getConfig();
-  const principal = await getPrincipal(request, config);
+async function readLeaderboard(request, deps = {}) {
+  const config = (deps.getConfig || getConfig)();
+  const principal = await (deps.getPrincipal || getPrincipal)(request, config);
   const stageId = Number(new URL(request.url).searchParams.get("stageId"));
   if (!VALID_STAGE_IDS.has(stageId)) throw new HttpError(400, "invalid_stage", "스테이지 번호가 올바르지 않습니다.");
-  const profiles = await getRepository(config).listByTenant(principal.tenantId);
+  const profiles = await (deps.getRepository || getRepository)(config).listByTenant(principal.tenantId);
   const rows = profiles.map((profile) => {
     const record = profile.stageRecords[String(stageId)] || null;
     return {

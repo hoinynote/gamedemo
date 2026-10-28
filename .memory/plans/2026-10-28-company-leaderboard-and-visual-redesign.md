@@ -13,8 +13,8 @@ Turn Tugmate into a company-only, sign-in-gated game on Azure Static Web Apps wi
 ## Phases
 | Phase | Status | Summary | Blueprint |
 | :--- | :--- | :--- | :--- |
-| P01 | `in_progress` | Secure Functions API, Cosmos adapters, contract, and deployment setup guide | [P01](../phases/2026-10-28-company-leaderboard-and-visual-redesign/P01-api-and-data/phase.md) |
-| P02 | `pending` | Entra sign-in, team-run timing, cloud progress, offline queue, rankings, and data deletion | [P02](../phases/2026-10-28-company-leaderboard-and-visual-redesign/P02-client-and-sync/phase.md) |
+| P01 | `done` | Secure Functions API, Cosmos adapters, contract, and deployment setup guide | [P01](../phases/2026-10-28-company-leaderboard-and-visual-redesign/P01-api-and-data/phase.md) |
+| P02 | `in_progress` | Entra sign-in, team-run timing, cloud progress, offline queue, rankings, and data deletion | [P02](../phases/2026-10-28-company-leaderboard-and-visual-redesign/P02-client-and-sync/phase.md) |
 | P03 | `pending` | Separate intro/map views, holographic map, responsive game sizing, and Azure workflow integration | [P03](../phases/2026-10-28-company-leaderboard-and-visual-redesign/P03-visuals-and-deployment/phase.md) |
 
 ## Completion Conditions
