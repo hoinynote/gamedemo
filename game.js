@@ -812,7 +812,7 @@
       for (const solid of this.getSolids()) {
         if (!intersects(player.bounds, solid)) continue;
         const wasAbove = previousY + player.height <= solid.y + 8;
-        if (player.vy >= 0 && wasAbove && player.dropTimer <= 0) {
+        if (player.vy >= 0 && wasAbove && (player.dropTimer <= 0 || solid.kind === "ground")) {
           player.y = solid.y - player.height;
           player.vy = 0;
           player.onGround = true;
