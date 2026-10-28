@@ -12,8 +12,8 @@
     jumpSpeed: 650,
     ropeTensionAcceleration: 7,
     ropeBoostAcceleration: 360,
-    playerWidth: 30,
-    playerHeight: 48,
+    playerWidth: 24,
+    playerHeight: 38,
   };
 
   const DEFAULT_CONTROLS = Object.freeze({
@@ -1066,6 +1066,7 @@
     drawPlayer(player) {
       ctx.save();
       ctx.translate(player.x, player.y);
+      ctx.scale(0.8, 0.8);
       ctx.fillStyle = player.color;
       ctx.shadowColor = player.color;
       ctx.shadowBlur = 18;

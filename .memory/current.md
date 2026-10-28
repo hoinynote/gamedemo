@@ -1,16 +1,16 @@
 ﻿# Current Context
 
 ## Active Plan
-[Platform Drop Ground Collision](./plans/2026-10-28-platform-drop-ground-collision.md)
+[Player Size Reduction](./plans/2026-10-28-player-size-reduction.md)
 
 ## Active Phase
-[P01 Ground Collision](./phases/2026-10-28-platform-drop-ground-collision/P01-ground-collision/phase.md)
+[P01 Player Scale](./phases/2026-10-28-player-size-reduction/P01-player-scale/phase.md)
 
 ## Active Task
 - None — all planned tasks are complete.
 
 ## Status
-- Below-platform drops still work, and map ground stays solid while the drop timer is active. `node --check game.js` passed.
+- Player collision dimensions are 24×38px, and player artwork is uniformly scaled to 80%. `node --check game.js` passed.
 
 ## Next Step (IMPORTANT)
 All tasks in this plan are complete.
