@@ -54,6 +54,10 @@ az cosmosdb table create \
   --name TugmateProfiles
 ```
 
+## Browser auth configuration
+
+Set `tenantId`, `clientId`, and `apiScope` in the tracked `auth-config.js` file before building the frontend. These are public Entra identifiers, not secrets. Keep them aligned with `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, and `ENTRA_API_SCOPE` in the Static Web App settings. The static values allow Entra sign-in to continue if the Functions API is temporarily unavailable; API-backed profile and leaderboard actions will sync when the API returns. Never put Cosmos credentials, client secrets, or access tokens in `auth-config.js`.
+
 ## 4. Static Web Apps 환경 변수
 
 Azure Portal에서 SWA의 **Environment variables**에 다음 값을 추가합니다. Cosmos 키와 Table connection string은 비밀 환경 변수로 저장합니다.

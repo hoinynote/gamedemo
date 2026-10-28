@@ -1,6 +1,6 @@
 # Task: T01 Entra Client
 
-## Status: pending
+## Status: done
 
 ## Goal
 Add tenant-restricted MSAL sign-in and expose a safe client identity/session service that gates map access and game play until a DEX tenant token has been acquired.
@@ -15,11 +15,13 @@ Add tenant-restricted MSAL sign-in and expose a safe client identity/session ser
 ### I01. Browser auth service and configuration
 - Related Files:
   - `auth.js` :: `AuthSession`, `loadPublicAuthConfig`, `signIn`, `signOut`, `getAccessToken`, `requestApi`, `isLocalPreview`; new
+  - `auth-config.js` :: static public tenant/client/scope fallback; new
   - `vendor/msal-browser.min.js` and its license file :: pinned browser MSAL runtime; new
   - `index.html` :: load vendor/auth before `game.js`; modify
 - Details:
   - Vendor a pinned `@azure/msal-browser` UMD/browser build (record exact version and license in `vendor/README.md`); do not depend on runtime CDN availability.
-  - Load public configuration from `GET /api/config`: `{tenantId,clientId,apiScope,configured}`. If not configured, show a clear setup-unavailable message and do not start a signed-in game session.
+  - Load public configuration from `GET /api/config`: `{tenantId,clientId,apiScope,configured}`. If the API is unavailable or unconfigured, fall back to the public identifiers in `auth-config.js` so sign-in can still work during API outages. If neither source is configured, show a setup-unavailable message and do not start a signed-in game session.
+  - `auth-config.js` may contain only tenant ID, SPA client ID, and API scope (public identifiers); never put a client secret, access token, or Cosmos key there.
   - Configure MSAL authority `https://login.microsoftonline.com/${tenantId}`, `clientId`, redirect URI at current origin root, and request only `openid`, `profile`, and the configured API scope. Validate returned tenant claim against configured tenant before accepting session.
   - `requestApi(path, options)` attaches the access token as a Bearer header, uses same-origin `/api`, parses JSON safely, and surfaces 401/403/503 errors without leaking token text.
   - Local preview may bypass Entra only when `location.hostname` is exactly `localhost` or `127.0.0.1` and API config is unconfigured. Mark the session “로컬 미리보기 · 기록 미동기화”; production hosts never use this branch.
@@ -35,15 +37,15 @@ Add tenant-restricted MSAL sign-in and expose a safe client identity/session ser
   - Remove direct menu auto-start through Enter while the app is at title/auth gate; preserve Enter behavior inside active play/pause/clear.
 
 ## Acceptance Criteria
-- [ ] Only configured tenant auth can reach the stage map in production.
-- [ ] No Cosmos or Entra secret is bundled to the browser; API access token is not persisted to localStorage.
-- [ ] Local preview explicitly says unsynced and is impossible on an Azure/GitHub hosted domain.
-- [ ] Sign-out returns to public title and prevents further authenticated API requests.
+- [x] Only configured tenant auth can reach the stage map in production.
+- [x] No Cosmos or Entra secret is bundled to the browser; API access token is not persisted to localStorage.
+- [x] Local preview explicitly says unsynced and is impossible on an Azure/GitHub hosted domain.
+- [x] Sign-out returns to public title and prevents further authenticated API requests.
 
 ## Validation
 - `node --check auth.js`
+- `node --check auth-config.js`
 - `node --check game.js`
-- `node --check site/auth.js`
 - `npm --prefix api test`
 
 ## Commit Message
@@ -59,6 +61,6 @@ Task: T01-entra-client
 ```
 
 ## Progress
-- [ ] Implementation complete
-- [ ] Validation passed
-- commit: pending
+- [x] Implementation complete
+- [x] Validation passed
+- commit: `0415c53`

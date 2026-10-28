@@ -486,6 +486,10 @@
       this.input = new InputManager();
       this.audio = new AudioManager();
       this.mode = "menu";
+      this.auth = window.ropeboundAuth;
+      this.authState = this.auth?.snapshot?.() || { status: "unavailable", error: "인증 기능을 사용할 수 없습니다." };
+      this.authReady = false;
+      this.stageAccessReady = false;
       this.stageIndex = 0;
       this.runSource = "campaign";
       this.campaignProgress = CampaignProgressStore.load();
@@ -513,11 +517,15 @@
         this.mode = "menu";
         this.pauseReason = "";
       }
+      this.initializeAuth();
       requestAnimationFrame((timestamp) => this.frame(timestamp));
     }
 
     bindUI() {
-      document.querySelector("#start-button")?.addEventListener("click", () => this.startNewGame());
+      document.querySelector("#start-button")?.addEventListener("click", () => this.handleTitleStart());
+      document.querySelector("#local-preview-button")?.addEventListener("click", () => this.enterLocalPreview());
+      document.querySelector("#auth-controls-button")?.addEventListener("click", () => this.openControls("#auth-screen"));
+      document.querySelector("#sign-out-button")?.addEventListener("click", () => this.signOut());
       document.querySelector("#new-game-button")?.addEventListener("click", () => this.startNewGame());
       document.querySelector("#continue-run-button")?.addEventListener("click", () => this.continueSavedRun());
       document.querySelector("#continue-button").addEventListener("click", () => this.advanceStage());
@@ -529,8 +537,118 @@
       document.querySelector("#pause-menu-button").addEventListener("click", () => this.returnToMenu());
     }
 
+    async initializeAuth() {
+      if (!this.auth) {
+        this.authReady = true;
+        this.authState = { status: "unavailable", error: "회사 로그인 기능을 불러오지 못했습니다." };
+        this.renderUI();
+        return;
+      }
+      this.authState = await this.auth.initialize();
+      this.authReady = true;
+      if (this.authState.status === "authenticated") {
+        await this.openStageMap();
+      } else {
+        this.renderUI();
+      }
+    }
+
+    async handleTitleStart() {
+      if (!this.authReady) return;
+      if (this.authState.status === "authenticated") {
+        await this.openStageMap();
+        return;
+      }
+      if (this.authState.status !== "signed-out") {
+        this.authState.error = this.authState.status === "unconfigured"
+          ? "회사 로그인 설정이 아직 완료되지 않았습니다."
+          : this.authState.error || "회사 로그인에 연결할 수 없습니다.";
+        this.renderUI();
+        return;
+      }
+      try {
+        await this.auth.signIn();
+      } catch {
+        this.authState.error = "로그인 창을 열지 못했습니다. 다시 시도해 주세요.";
+        this.renderUI();
+      }
+    }
+
+    async enterLocalPreview() {
+      try {
+        this.authState = await this.auth.enterLocalPreview();
+        await this.openStageMap();
+      } catch {
+        this.authState.error = "로컬 미리보기는 localhost에서만 사용할 수 있습니다.";
+        this.renderUI();
+      }
+    }
+
+    async openStageMap() {
+      if (this.authState.status !== "authenticated" && this.authState.status !== "local-preview") return false;
+      if (this.authState.status === "authenticated") {
+        try {
+          const response = await this.auth.requestApi("/api/me");
+          this.auth.profile = response.profile;
+          this.authState.apiAvailable = true;
+        } catch (error) {
+          if (error.status === 401 || error.status === 403) {
+            this.authState.error = error.message;
+            this.authState.status = "unavailable";
+            this.renderUI();
+            return false;
+          }
+          this.authState.apiAvailable = false;
+          this.authState.error = "랭킹 서버에 연결할 수 없습니다. 플레이 기록은 복구 후 동기화됩니다.";
+        }
+      }
+      this.stageAccessReady = true;
+      this.mode = "menu";
+      this.renderUI();
+      return true;
+    }
+
+    async signOut() {
+      if (this.authState.status === "local-preview") {
+        this.auth.localPreview = false;
+        this.auth.status = "unconfigured";
+      } else {
+        try { await this.auth.signOut(); } catch { /* redirect can be interrupted by browser policy */ }
+      }
+      this.stageAccessReady = false;
+      this.authState = this.auth.snapshot();
+      this.mode = "menu";
+      this.renderUI();
+    }
+
+    renderAuthScreen() {
+      const startButton = document.querySelector("#start-button");
+      const localButton = document.querySelector("#local-preview-button");
+      const status = document.querySelector("#auth-status");
+      if (!startButton || !status) return;
+      const state = this.authState;
+      startButton.disabled = !this.authReady || state.status === "loading" || state.status === "unconfigured" || state.status === "unavailable";
+      startButton.textContent = state.status === "signed-out" ? "회사 계정으로 로그인" : "게임 시작";
+      if (localButton) localButton.hidden = !(state.localPreviewAvailable && !state.localPreview);
+      if (!this.authReady) status.textContent = "회사 로그인 설정을 확인하고 있습니다.";
+      else if (state.status === "unconfigured") status.textContent = state.localPreviewAvailable
+        ? "로컬 개발 환경입니다. 회사 기록은 저장되지 않습니다."
+        : "회사 로그인 설정이 아직 완료되지 않았습니다.";
+      else if (state.status === "signed-out") status.textContent = "DEX Consulting 회사 계정으로 로그인해 주세요.";
+      else if (state.status === "unavailable") status.textContent = state.error || "회사 로그인에 연결할 수 없습니다.";
+      else if (state.status === "local-preview") status.textContent = "로컬 미리보기 · 기록 미동기화";
+      else status.textContent = state.error || "로그인되었습니다. 게임을 시작할 수 있습니다.";
+      const accountStatus = document.querySelector("#account-status");
+      if (accountStatus) {
+        accountStatus.textContent = state.status === "authenticated"
+          ? `${state.displayName || this.auth.getDisplayName()}${state.apiAvailable === false ? " · 동기화 대기" : ""}`
+          : state.status === "local-preview" ? "로컬 미리보기 · 기록 미동기화" : "";
+      }
+    }
+
     handleGlobalInput(event) {
       if (this.capturingBinding || this.controlsOpen) return;
+      if (event.code === "Enter" && !this.stageAccessReady) return;
       if (event.code === "Escape" && (this.mode === "playing" || this.mode === "paused")) {
         event.preventDefault();
         if (this.mode === "playing") this.pause("manual");
@@ -560,6 +678,7 @@
       this.controlsReturnTo = returnTo;
       this.input.clear();
       this.renderControls();
+      this.showOverlay("#auth-screen", false);
       this.showOverlay("#menu-screen", false);
       this.showOverlay("#pause-screen", false);
       this.showOverlay("#controls-screen", true);
@@ -681,6 +800,7 @@
     }
 
     startNewGame() {
+      if (!this.stageAccessReady) return;
       this.audio.unlock();
       CheckpointStore.clear();
       this.savedCheckpoint = null;
@@ -692,6 +812,7 @@
     }
 
     continueSavedRun() {
+      if (!this.stageAccessReady) return;
       const checkpoint = CheckpointStore.load();
       if (!checkpoint) {
         this.savedCheckpoint = null;
@@ -709,7 +830,7 @@
     }
 
     startStageFromCard(stageId) {
-      if (!Number.isInteger(stageId) || !this.isStageUnlocked(stageId)) return;
+      if (!this.stageAccessReady || !Number.isInteger(stageId) || !this.isStageUnlocked(stageId)) return;
       this.audio.unlock();
       this.runSource = "replay";
       this.loadStage(stageId);
@@ -1489,10 +1610,15 @@
     }
 
     renderUI() {
-      this.showOverlay("#menu-screen", this.mode === "menu");
-      this.showOverlay("#pause-screen", this.mode === "paused" && !this.controlsOpen);
-      this.showOverlay("#clear-screen", this.mode === "won");
-      if (this.mode === "menu") {
+      const showMap = this.stageAccessReady && this.mode === "menu" && !this.controlsOpen;
+      const showTitle = !this.stageAccessReady && !this.controlsOpen;
+      this.showOverlay("#auth-screen", showTitle);
+      this.showOverlay("#menu-screen", showMap);
+      this.showOverlay("#pause-screen", this.stageAccessReady && this.mode === "paused" && !this.controlsOpen);
+      this.showOverlay("#clear-screen", this.stageAccessReady && this.mode === "won");
+      if (showTitle) this.renderAuthScreen();
+      if (showMap) {
+        this.renderAuthScreen();
         const checkpoint = CheckpointStore.load();
         this.savedCheckpoint = checkpoint;
         const renderKey = JSON.stringify({ progress: this.campaignProgress, savedAt: checkpoint?.savedAt || null });
