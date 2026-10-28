@@ -11,7 +11,8 @@
     friction: 0.78,
     jumpSpeed: 650,
     ropeTensionAcceleration: 7,
-    ropeLaunchImpulse: 900,
+    ropeLaunchHorizontalImpulse: 700,
+    ropeLaunchVerticalImpulse: 1100,
     ropeLaunchDuration: 0.35,
     playerWidth: 24,
     playerHeight: 38,
@@ -871,8 +872,8 @@
           const dy = (targetCenter.y - ownerCenter.y) / Math.max(rope.currentLength, 1);
           rope.boostLevel = 0;
           if (this.input.wasPressed(controls.boost)) {
-            target.vx -= dx * PHYSICS.ropeLaunchImpulse;
-            target.vy -= dy * PHYSICS.ropeLaunchImpulse;
+            target.vx -= dx * PHYSICS.ropeLaunchHorizontalImpulse;
+            target.vy -= dy * PHYSICS.ropeLaunchVerticalImpulse;
             owner.launchTimer = 0;
             target.launchTimer = PHYSICS.ropeLaunchDuration;
             for (const connectedRope of this.ropes) {
