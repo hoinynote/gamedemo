@@ -60,4 +60,4 @@ Task: T03-api-validation-and-setup
 ## Progress
 - [x] Implementation complete
 - [x] Validation passed (`npm.cmd run check`, `npm.cmd test` — 19 passed, Bash syntax check, sample JSON parse, `git diff --check`)
-- commit: pending
+- commit: `11263ee`

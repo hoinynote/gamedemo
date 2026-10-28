@@ -63,4 +63,4 @@ Task: T01-entra-client
 ## Progress
 - [x] Implementation complete
 - [x] Validation passed
-- commit: `0415c53`
+- commit: `0ebc394`
