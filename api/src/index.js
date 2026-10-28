@@ -1,1 +1,5 @@
-// Azure Functions v4 handlers are registered here as API features are added.
+require("./functions/config");
+require("./functions/me");
+require("./functions/progress");
+require("./functions/clear");
+require("./functions/leaderboard");

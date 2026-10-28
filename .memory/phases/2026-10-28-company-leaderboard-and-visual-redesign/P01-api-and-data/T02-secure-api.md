@@ -1,6 +1,6 @@
 # Task: T02 Secure API
 
-## Status: pending
+## Status: done
 
 ## Goal
 Expose authenticated, tenant-bound HTTP functions for game configuration, account profile/progress, stage clear submissions, leaderboard reads, and deletion.
@@ -63,6 +63,6 @@ Task: T02-secure-api
 ```
 
 ## Progress
-- [ ] Implementation complete
-- [ ] Validation passed
+- [x] Implementation complete
+- [x] Validation passed (`npm.cmd run check`, `npm.cmd test`, `git diff --check`)
 - commit: pending

@@ -45,11 +45,11 @@ function normalizeProfile(value) {
     for (const [key, record] of Object.entries(value.stageRecords)) {
       const stageId = Number(key);
       const partnerLabel = typeof record?.teamLabel === "string" ? record.teamLabel.trim().replace(/\s+/gu, " ") : "";
-      const labelPrefix = `${displayName} with `;
+      const labelParts = partnerLabel.split(/\s+with\s+/u);
       if (!VALID_STAGE_IDS.has(stageId) || !Number.isInteger(record?.bestMs)
         || record.bestMs < MIN_CLEAR_MS || record.bestMs > MAX_CLEAR_MS
-        || !partnerLabel.startsWith(labelPrefix) || partnerLabel.length > MAX_TEAM_LABEL_LENGTH
-        || partnerLabel.slice(labelPrefix.length).trim().length === 0) continue;
+        || labelParts.length !== 2 || !labelParts[0].trim() || !labelParts[1].trim()
+        || partnerLabel.length > MAX_TEAM_LABEL_LENGTH) continue;
       stageRecords[String(stageId)] = {
         bestMs: record.bestMs,
         teamLabel: partnerLabel,
