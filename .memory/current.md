@@ -1,16 +1,16 @@
 ﻿# Current Context
 
 ## Active Plan
-[Throw Momentum Window](./plans/2026-10-28-throw-momentum-window.md)
+[One-Way Partner Throw](./plans/2026-10-28-one-way-partner-throw.md)
 
 ## Active Phase
-[P01 Preserve Throw Speed](./phases/2026-10-28-throw-momentum-window/P01-preserve-throw-speed/phase.md)
+[P01 Target-Only Launch](./phases/2026-10-28-one-way-partner-throw/P01-target-only-launch/phase.md)
 
 ## Active Task
 - None — all planned tasks are complete.
 
 ## Status
-- Launch velocity is preserved for 0.35 seconds for both players; gravity and collisions remain active. The timer is saved in checkpoints with backward-compatible restore. `node --check game.js` passed.
+- The thrower receives no launch impulse; only the connected partner is launched. `node --check game.js` and the target-only force inspection passed.
 
 ## Next Step (IMPORTANT)
 All tasks in this plan are complete.
