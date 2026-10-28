@@ -862,7 +862,7 @@
           rope.tension = Math.max(0, rope.currentLength - rope.maxLength);
           rope.boostLevel = this.input.isDown(controls.boost) ? 1 : 0;
           if (rope.boostLevel > 0 && rope.tension > 2) this.audio.beep(250, 0.02, "square", 0.012);
-          if (rope.tension > 0) {
+          if (rope.tension > 0 || rope.boostLevel > 0) {
             const dx = (targetCenter.x - ownerCenter.x) / Math.max(rope.currentLength, 1);
             const dy = (targetCenter.y - ownerCenter.y) / Math.max(rope.currentLength, 1);
             const force = (rope.tension * PHYSICS.ropeTensionAcceleration + PHYSICS.ropeBoostAcceleration * rope.boostLevel) * delta;
