@@ -18,6 +18,9 @@
       this.error = "";
       this.localPreviewAvailable = false;
       this.localPreview = false;
+      this.syncing = false;
+      this.syncRetryTimer = null;
+      this.syncRetryCount = 0;
     }
 
     async initialize() {
@@ -147,6 +150,81 @@
         throw error;
       }
       return body;
+    }
+
+    pendingKey(ownerId) { return `tugmate:pending-sync:v1:${encodeURIComponent(ownerId)}`; }
+
+    loadPendingEvents(ownerId) {
+      try {
+        const value = JSON.parse(window.localStorage.getItem(this.pendingKey(ownerId)) || "null");
+        return value?.version === 1 && value.ownerId === ownerId && Array.isArray(value.events)
+          ? value.events.filter((event) => typeof event.eventId === "string" && ["progress", "clear"].includes(event.type) && event.payload && typeof event.payload === "object")
+          : [];
+      } catch { return []; }
+    }
+
+    savePendingEvents(ownerId, events) {
+      try {
+        const key = this.pendingKey(ownerId);
+        if (events.length) window.localStorage.setItem(key, JSON.stringify({ version: 1, ownerId, events }));
+        else window.localStorage.removeItem(key);
+        return true;
+      } catch (error) {
+        console.warn("Pending game sync could not be saved.", error);
+        return false;
+      }
+    }
+
+    enqueuePendingEvent(ownerId, type, payload) {
+      if (!ownerId || !["progress", "clear"].includes(type)) return false;
+      const events = this.loadPendingEvents(ownerId);
+      const eventId = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      events.push({ eventId, type, createdAt: new Date().toISOString(), payload });
+      return this.savePendingEvents(ownerId, events);
+    }
+
+    async syncPendingEvents(ownerId = this.getOwnerId()) {
+      if (!ownerId || this.localPreview || this.status !== "authenticated" || this.syncing) return { synced: 0, pending: this.loadPendingEvents(ownerId).length };
+      this.syncing = true;
+      let synced = 0;
+      let events = this.loadPendingEvents(ownerId);
+      try {
+        while (events.length) {
+          const event = events[0];
+          const result = await this.requestApi(event.type === "clear" ? "/api/clear" : "/api/progress", {
+            method: "POST", body: JSON.stringify(event.payload),
+          });
+          if (result?.profile) this.profile = result.profile;
+          events = events.filter((candidate) => candidate.eventId !== event.eventId);
+          this.savePendingEvents(ownerId, events);
+          synced += 1;
+        }
+        this.syncRetryCount = 0;
+        if (this.syncRetryTimer) clearTimeout(this.syncRetryTimer);
+        this.syncRetryTimer = null;
+      } catch (error) {
+        if (!error.status || error.status >= 500) this.scheduleSyncRetry(ownerId);
+        throw error;
+      } finally {
+        this.syncing = false;
+      }
+      return { synced, pending: events.length };
+    }
+
+    scheduleSyncRetry(ownerId) {
+      if (this.syncRetryTimer || this.localPreview) return;
+      const delay = Math.min(60000, 2000 * (2 ** this.syncRetryCount));
+      this.syncRetryCount += 1;
+      this.syncRetryTimer = setTimeout(() => {
+        this.syncRetryTimer = null;
+        this.syncPendingEvents(ownerId).catch(() => {});
+      }, delay);
+    }
+
+    clearOwnerData(ownerId) {
+      if (this.syncRetryTimer) clearTimeout(this.syncRetryTimer);
+      this.syncRetryTimer = null;
+      try { window.localStorage.removeItem(this.pendingKey(ownerId)); } catch { /* storage may be unavailable */ }
     }
 
     async enterLocalPreview() {

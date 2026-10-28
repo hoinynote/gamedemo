@@ -63,7 +63,7 @@
   class ControlsStore {
     static get key() { return "ropebound-controls:v1"; }
 
-    static load() {
+    static load(ownerId = null) {
       try {
         const raw = window.localStorage.getItem(this.key);
         if (!raw) return cloneDefaultControls();
@@ -351,7 +351,12 @@
         const validPlayers = Array.isArray(snapshot.players) && snapshot.players.length === 2
           && snapshot.players.every((player) => Number.isFinite(player.x) && Number.isFinite(player.y));
         const validStage = Number.isInteger(snapshot.stageIndex) && snapshot.stageIndex >= 0 && snapshot.stageIndex < STAGES.length;
-        if (snapshot.version !== 1 || !validPlayers || !validStage) return null;
+        const validRun = typeof snapshot.ownerId === "string" && snapshot.ownerId.length > 0
+          && typeof snapshot.partnerName === "string" && snapshot.partnerName.length > 0
+          && typeof snapshot.teamLabel === "string" && snapshot.teamLabel.length > 0
+          && typeof snapshot.attemptId === "string" && Number.isFinite(snapshot.elapsedMs) && snapshot.elapsedMs >= 0;
+        if (snapshot.version !== 2 || !validPlayers || !validStage || !validRun) return null;
+        if (ownerId && snapshot.ownerId !== ownerId) return null;
         return snapshot;
       } catch (error) {
         console.warn("Checkpoint could not be loaded.", error);
@@ -365,7 +370,7 @@
   }
 
   class CampaignProgressStore {
-    static get key() { return "ropebound-campaign-progress:v1"; }
+    static key(ownerId = "local-preview") { return `ropebound-campaign-progress:v1:${encodeURIComponent(ownerId)}`; }
 
     static defaults() {
       return { version: 1, clearedStageIds: [], bonusStageUnlocked: false };
@@ -376,14 +381,14 @@
         || typeof progress.bonusStageUnlocked !== "boolean") return this.defaults();
       return {
         version: 1,
-        clearedStageIds: [...new Set(progress.clearedStageIds.filter((id) => Number.isInteger(id) && id >= 0 && id < STAGES.length))],
+        clearedStageIds: [...new Set(progress.clearedStageIds.filter((id) => Number.isInteger(id) && id >= 0 && id <= 2))],
         bonusStageUnlocked: progress.bonusStageUnlocked,
       };
     }
 
-    static load() {
+    static load(ownerId) {
       try {
-        const raw = window.localStorage.getItem(this.key);
+        const raw = window.localStorage.getItem(this.key(ownerId));
         return raw ? this.sanitize(JSON.parse(raw)) : this.defaults();
       } catch (error) {
         console.warn("Campaign progress could not be loaded.", error);
@@ -391,35 +396,49 @@
       }
     }
 
-    static save(progress) {
+    static save(progress, ownerId) {
       const sanitized = this.sanitize(progress);
       try {
-        window.localStorage.setItem(this.key, JSON.stringify(sanitized));
+        window.localStorage.setItem(this.key(ownerId), JSON.stringify(sanitized));
         return sanitized;
       } catch (error) {
         console.warn("Campaign progress could not be saved.", error);
-        return this.load();
+        return this.load(ownerId);
       }
     }
 
-    static clear() {
-      try { window.localStorage.removeItem(this.key); } catch (error) { /* no-op */ }
+    static clear(ownerId) {
+      try { window.localStorage.removeItem(this.key(ownerId)); } catch (error) { /* no-op */ }
       return this.defaults();
     }
 
-    static clearStage(stageId) {
-      const progress = this.load();
-      if (Number.isInteger(stageId) && stageId >= 0 && stageId < STAGES.length) {
+    static clearStage(stageId, ownerId) {
+      const progress = this.load(ownerId);
+      if (Number.isInteger(stageId) && stageId >= 0 && stageId <= 2) {
         progress.clearedStageIds.push(stageId);
       }
-      return this.save(progress);
+      return this.save(progress, ownerId);
     }
 
-    static unlockBonusStage() {
-      const progress = this.load();
+    static unlockBonusStage(ownerId) {
+      const progress = this.load(ownerId);
       progress.bonusStageUnlocked = true;
-      return this.save(progress);
+      return this.save(progress, ownerId);
     }
+  }
+
+  class RunSessionStore {
+    static key = "tugmate:run-session:v1";
+    static load(ownerId) {
+      try {
+        const value = JSON.parse(window.localStorage.getItem(this.key) || "null");
+        return value?.version === 1 && value.ownerId === ownerId ? value : null;
+      } catch { return null; }
+    }
+    static save(session) {
+      try { window.localStorage.setItem(this.key, JSON.stringify(session)); } catch (error) { console.warn("Run session could not be saved.", error); }
+    }
+    static clear() { try { window.localStorage.removeItem(this.key); } catch { /* no-op */ } }
   }
 
   class HistoryPauseController {
@@ -492,8 +511,12 @@
       this.stageAccessReady = false;
       this.stageIndex = 0;
       this.runSource = "campaign";
-      this.campaignProgress = CampaignProgressStore.load();
-      this.savedCheckpoint = CheckpointStore.load();
+      this.ownerId = "";
+      this.activeAttempt = null;
+      this.pendingRun = null;
+      this.partnerDialogResolve = null;
+      this.campaignProgress = CampaignProgressStore.defaults();
+      this.savedCheckpoint = null;
       this.menuRenderKey = null;
       this.stage = null;
       this.stageState = null;
@@ -509,14 +532,25 @@
       document.addEventListener("keydown", (event) => this.captureControlBinding(event), true);
       this.bindUI();
       window.addEventListener("keydown", (event) => this.handleGlobalInput(event));
+      window.addEventListener("online", () => {
+        if (this.ownerId && this.authState.status === "authenticated") {
+          this.auth.syncPendingEvents(this.ownerId).then(() => {
+            if (this.auth.profile) this.mergeCloudProfile(this.auth.profile);
+            this.authState.apiAvailable = true;
+            this.authState.error = "";
+            this.renderUI();
+          }).catch(() => {});
+        }
+      });
       this.historyController.install();
       this.loadStage(this.savedCheckpoint ? this.savedCheckpoint.stageIndex : 0);
       this.renderControls();
-      if (this.savedCheckpoint) {
-        this.restore(this.savedCheckpoint);
-        this.mode = "menu";
-        this.pauseReason = "";
-      }
+      document.querySelector("#partner-form")?.addEventListener("submit", (event) => this.confirmNewRun(event));
+      document.querySelector("#partner-cancel-button")?.addEventListener("click", () => this.cancelNewRun());
+      document.querySelector("#partner-dialog")?.addEventListener("cancel", (event) => {
+        event.preventDefault();
+        this.cancelNewRun();
+      });
       this.initializeAuth();
       requestAnimationFrame((timestamp) => this.frame(timestamp));
     }
@@ -586,11 +620,22 @@
 
     async openStageMap() {
       if (this.authState.status !== "authenticated" && this.authState.status !== "local-preview") return false;
+      this.ownerId = this.auth.getOwnerId();
+      this.campaignProgress = CampaignProgressStore.load(this.ownerId);
+      const cachedCheckpoint = CheckpointStore.load();
+      this.savedCheckpoint = cachedCheckpoint?.ownerId === this.ownerId ? cachedCheckpoint : null;
+      if (cachedCheckpoint && !this.savedCheckpoint) CheckpointStore.clear();
+      this.activeAttempt = RunSessionStore.load(this.ownerId);
       if (this.authState.status === "authenticated") {
         try {
           const response = await this.auth.requestApi("/api/me");
           this.auth.profile = response.profile;
+          this.mergeCloudProfile(response.profile);
           this.authState.apiAvailable = true;
+          this.auth.syncPendingEvents(this.ownerId).then(() => {
+            if (this.auth.profile) this.mergeCloudProfile(this.auth.profile);
+            this.renderUI();
+          }).catch(() => {});
         } catch (error) {
           if (error.status === 401 || error.status === 403) {
             this.authState.error = error.message;
@@ -600,12 +645,66 @@
           }
           this.authState.apiAvailable = false;
           this.authState.error = "랭킹 서버에 연결할 수 없습니다. 플레이 기록은 복구 후 동기화됩니다.";
+          if (this.authState.status === "authenticated") {
+            this.auth.enqueuePendingEvent(this.ownerId, "progress", {
+              clearedStageIds: this.campaignProgress.clearedStageIds,
+              bonusStageUnlocked: this.campaignProgress.bonusStageUnlocked,
+            });
+            this.auth.syncPendingEvents(this.ownerId).catch(() => {});
+          }
         }
       }
       this.stageAccessReady = true;
+      if (this.savedCheckpoint) {
+        this.restore(this.savedCheckpoint);
+        this.mode = "menu";
+        this.pauseReason = "";
+      }
       this.mode = "menu";
       this.renderUI();
       return true;
+    }
+
+    mergeCloudProfile(profile) {
+      if (!profile || !Array.isArray(profile.clearedStageIds)) return;
+      const clearedStageIds = [...new Set([...this.campaignProgress.clearedStageIds, ...profile.clearedStageIds])];
+      const bonusStageUnlocked = this.campaignProgress.bonusStageUnlocked || profile.bonusStageUnlocked === true;
+      this.campaignProgress = CampaignProgressStore.save({ version: 1, clearedStageIds, bonusStageUnlocked }, this.ownerId);
+      this.cloudStageRecords = profile.stageRecords || {};
+      if (this.authState.status === "authenticated"
+        && (this.campaignProgress.clearedStageIds.some((id) => !profile.clearedStageIds.includes(id))
+          || (this.campaignProgress.bonusStageUnlocked && !profile.bonusStageUnlocked))) this.queueProgressSync();
+    }
+
+    queueProgressSync() {
+      if (this.authState.status !== "authenticated" || !this.ownerId) return;
+      const payload = {
+        clearedStageIds: this.campaignProgress.clearedStageIds,
+        bonusStageUnlocked: this.campaignProgress.bonusStageUnlocked,
+      };
+      this.auth.enqueuePendingEvent(this.ownerId, "progress", payload);
+      this.auth.syncPendingEvents(this.ownerId).then(() => {
+        if (this.auth.profile) this.mergeCloudProfile(this.auth.profile);
+        this.authState.apiAvailable = true;
+        this.authState.error = "";
+        this.renderUI();
+      }).catch(() => {});
+    }
+
+    submitStageClear() {
+      if (this.authState.status !== "authenticated" || !this.activeAttempt) return;
+      const payload = {
+        stageId: this.stageIndex,
+        elapsedMs: Math.max(0, Math.round(this.elapsed * 1000)),
+        partnerName: this.activeAttempt.partnerName,
+      };
+      this.auth.enqueuePendingEvent(this.ownerId, "clear", payload);
+      this.auth.syncPendingEvents(this.ownerId).then(() => {
+        if (this.auth.profile) this.mergeCloudProfile(this.auth.profile);
+        this.authState.apiAvailable = true;
+        this.authState.error = "";
+        this.renderUI();
+      }).catch(() => {});
     }
 
     async signOut() {
@@ -801,26 +900,33 @@
 
     startNewGame() {
       if (!this.stageAccessReady) return;
-      this.audio.unlock();
-      CheckpointStore.clear();
-      this.savedCheckpoint = null;
-      this.runSource = "campaign";
-      this.stageIndex = 0;
-      this.loadStage(this.stageIndex);
-      this.mode = "playing";
-      this.historyController.arm();
+      this.requestNewRun(0, "campaign");
     }
 
     continueSavedRun() {
       if (!this.stageAccessReady) return;
-      const checkpoint = CheckpointStore.load();
+      const checkpoint = CheckpointStore.load(this.ownerId);
       if (!checkpoint) {
+        this.savedCheckpoint = null;
+        this.renderUI();
+        return;
+      }
+      if (checkpoint.ownerId !== this.ownerId) {
+        CheckpointStore.clear();
         this.savedCheckpoint = null;
         this.renderUI();
         return;
       }
       this.audio.unlock();
       this.runSource = "campaign";
+      this.activeAttempt = {
+        ownerId: this.ownerId,
+        partnerName: checkpoint.partnerName,
+        teamLabel: checkpoint.teamLabel,
+        stageId: checkpoint.stageIndex,
+        elapsedMs: checkpoint.elapsedMs,
+        attemptId: checkpoint.attemptId,
+      };
       this.savedCheckpoint = checkpoint;
       this.restore(checkpoint);
       this.mode = checkpoint.mode === "won" ? "won" : "playing";
@@ -831,11 +937,60 @@
 
     startStageFromCard(stageId) {
       if (!this.stageAccessReady || !Number.isInteger(stageId) || !this.isStageUnlocked(stageId)) return;
+      this.requestNewRun(stageId, "replay");
+    }
+
+    requestNewRun(stageId, runSource, partnerName = "") {
+      if (!this.stageAccessReady || !Number.isInteger(stageId) || !this.isStageUnlocked(stageId)) return;
+      this.pendingRun = { stageId, runSource, previousMode: this.mode };
+      const employeeName = this.authState.displayName || this.auth.getDisplayName();
+      document.querySelector("#employee-name").value = employeeName;
+      const partnerInput = document.querySelector("#partner-name");
+      partnerInput.value = partnerName || this.activeAttempt?.partnerName || "";
+      document.querySelector("#partner-form-status").textContent = "팀 이름은 랭킹에 표시됩니다.";
+      this.mode = "paused";
+      this.pauseReason = "team-setup";
+      document.querySelector("#partner-dialog")?.showModal();
+      partnerInput.focus();
+    }
+
+    confirmNewRun(event) {
+      event.preventDefault();
+      if (!this.pendingRun) return;
+      const partnerName = document.querySelector("#partner-name").value.trim().replace(/\s+/gu, " ");
+      if (!partnerName || partnerName.length > 40) {
+        document.querySelector("#partner-form-status").textContent = "파트너 이름을 1~40자로 입력해 주세요.";
+        return;
+      }
+      const { stageId, runSource } = this.pendingRun;
+      const displayName = this.authState.displayName || this.auth.getDisplayName();
+      this.activeAttempt = {
+        ownerId: this.ownerId,
+        partnerName,
+        teamLabel: `${displayName} with ${partnerName}`,
+        stageId,
+        elapsedMs: 0,
+        attemptId: window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      };
+      RunSessionStore.save({ version: 1, ...this.activeAttempt });
+      this.pendingRun = null;
+      document.querySelector("#partner-dialog").close();
       this.audio.unlock();
-      this.runSource = "replay";
+      this.runSource = runSource;
+      this.stageIndex = stageId;
       this.loadStage(stageId);
       this.mode = "playing";
+      this.savedCheckpoint = null;
+      if (runSource === "campaign") CheckpointStore.clear();
       this.historyController.arm();
+    }
+
+    cancelNewRun() {
+      if (!this.pendingRun) return;
+      this.mode = this.pendingRun.previousMode;
+      this.pendingRun = null;
+      document.querySelector("#partner-dialog").close();
+      this.renderUI();
     }
 
     isStageUnlocked(stageId) {
@@ -864,10 +1019,18 @@
           this.savedCheckpoint = null;
         }
         this.mode = "menu";
+        this.activeAttempt = null;
+        RunSessionStore.clear();
         this.loadStage(0);
         return;
       }
       this.stageIndex += 1;
+      if (this.activeAttempt) {
+        this.activeAttempt.stageId = this.stageIndex;
+        this.activeAttempt.elapsedMs = 0;
+        this.activeAttempt.attemptId = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        RunSessionStore.save({ version: 1, ...this.activeAttempt });
+      }
       this.loadStage(this.stageIndex);
       this.mode = "playing";
       this.saveCheckpoint();
@@ -889,9 +1052,19 @@
       this.lastFrameAt = performance.now();
     }
 
-    resetStage() {
+    resetStage(promptPartner = true) {
+      if (promptPartner) {
+        this.requestNewRun(this.stageIndex, this.runSource, this.activeAttempt?.partnerName || "");
+        return;
+      }
       this.audio.unlock();
       this.audio.fail();
+      if (this.activeAttempt) {
+        this.activeAttempt.attemptId = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        this.activeAttempt.elapsedMs = 0;
+        this.activeAttempt.stageId = this.stageIndex;
+        RunSessionStore.save({ version: 1, ...this.activeAttempt });
+      }
       this.loadStage(this.stageIndex);
       this.mode = "playing";
       this.historyController.arm();
@@ -925,12 +1098,18 @@
     saveCheckpoint() {
       if (this.runSource === "replay" || !this.stage || !this.players.length) return;
       CheckpointStore.save(this.serialize());
-      this.savedCheckpoint = CheckpointStore.load();
+      if (this.activeAttempt) RunSessionStore.save({ version: 1, ...this.activeAttempt });
+      this.savedCheckpoint = CheckpointStore.load(this.ownerId);
     }
 
     serialize() {
       return {
-        version: 1,
+        version: 2,
+        ownerId: this.ownerId,
+        partnerName: this.activeAttempt?.partnerName || "",
+        teamLabel: this.activeAttempt?.teamLabel || "",
+        attemptId: this.activeAttempt?.attemptId || "",
+        elapsedMs: Math.round(this.elapsed * 1000),
         savedAt: Date.now(),
         mode: this.mode,
         stageIndex: this.stageIndex,
@@ -965,7 +1144,17 @@
     }
 
     restore(snapshot) {
+      this.ownerId = snapshot.ownerId;
+      this.activeAttempt = {
+        ownerId: snapshot.ownerId,
+        partnerName: snapshot.partnerName,
+        teamLabel: snapshot.teamLabel,
+        stageId: snapshot.stageIndex,
+        elapsedMs: snapshot.elapsedMs,
+        attemptId: snapshot.attemptId,
+      };
       this.loadStage(snapshot.stageIndex);
+      this.elapsed = snapshot.elapsedMs / 1000;
       for (const saved of snapshot.players) {
         const player = this.players.find((item) => item.id === saved.id);
         if (!player) continue;
@@ -1050,12 +1239,16 @@
     update(delta) {
       if (this.mode === "playing") {
         this.elapsed += delta;
+        if (this.activeAttempt) {
+          this.activeAttempt.elapsedMs = Math.round(this.elapsed * 1000);
+        }
         this.updateMovingPlatforms();
         this.updateObjects(delta);
         if (!this.campaignProgress.bonusStageUnlocked && this.stage.switches.some((item) => (
           item.unlockBonusStage && this.stageState.switches[item.id]
         ))) {
-          this.campaignProgress = CampaignProgressStore.unlockBonusStage();
+          this.campaignProgress = CampaignProgressStore.unlockBonusStage(this.ownerId);
+          this.queueProgressSync();
         }
         this.updatePlayers(delta);
         this.updateRopes(delta);
@@ -1113,7 +1306,7 @@
         this.resolveVertical(player, previousY);
         if (previousX !== player.x && player.onGround && player.launchTimer <= 0) player.vx *= 0.99;
         player.x = clamp(player.x, 0, this.stage.width - player.width);
-        if (player.y > VIEW.height + 160) this.resetStage();
+        if (player.y > VIEW.height + 160) this.resetStage(false);
       }
     }
 
@@ -1277,7 +1470,7 @@
 
     checkHazards() {
       if (this.players.some((player) => this.stage.hazards.some((item) => intersects(player.bounds, item)))) {
-        this.resetStage();
+        this.resetStage(false);
       }
     }
 
@@ -1285,8 +1478,9 @@
       if (this.mode !== "playing") return;
       if (this.players.every((player) => intersects(player.bounds, this.stage.exit))) {
         this.mode = "won";
-        this.campaignProgress = CampaignProgressStore.clearStage(this.stageIndex);
+        this.campaignProgress = CampaignProgressStore.clearStage(this.stageIndex, this.ownerId);
         this.audio.clear();
+        this.submitStageClear();
         this.saveCheckpoint();
       }
     }
@@ -1619,7 +1813,7 @@
       if (showTitle) this.renderAuthScreen();
       if (showMap) {
         this.renderAuthScreen();
-        const checkpoint = CheckpointStore.load();
+        const checkpoint = CheckpointStore.load(this.ownerId);
         this.savedCheckpoint = checkpoint;
         const renderKey = JSON.stringify({ progress: this.campaignProgress, savedAt: checkpoint?.savedAt || null });
         if (renderKey !== this.menuRenderKey) {

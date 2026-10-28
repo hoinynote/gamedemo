@@ -1,6 +1,6 @@
 # Task: T02 Progress and Offline Sync
 
-## Status: pending
+## Status: done
 
 ## Goal
 Associate each attempt with the signed-in employee plus a partner label, time the current attempt, and sync account progress/best clears with a local retry queue while keeping checkpoints local.
@@ -46,11 +46,11 @@ Associate each attempt with the signed-in employee plus a partner label, time th
   - Once synced, remove only the acknowledged event IDs. Merge server progress by union and best-time comparison.
 
 ## Acceptance Criteria
-- [ ] Partner name and account owner persist across continue and stage transitions; restart resets timer and prompts for partner again.
-- [ ] Pause/menu time is excluded and timer resumes with a checkpoint.
-- [ ] Stage clear/unlock events survive API outage in local storage and later synchronize idempotently.
-- [ ] Checkpoints never upload to the cloud and cannot be resumed under another account.
-- [ ] No access token or Cosmos secret is written to localStorage.
+- [x] Partner name and account owner persist across continue and stage transitions; restart resets timer and prompts for partner again.
+- [x] Pause/menu time is excluded and timer resumes with a checkpoint.
+- [x] Stage clear/unlock events survive API outage in local storage and later synchronize idempotently.
+- [x] Checkpoints never upload to the cloud and cannot be resumed under another account.
+- [x] No access token or Cosmos secret is written to localStorage.
 
 ## Validation
 - `node --check game.js`
@@ -71,6 +71,6 @@ Task: T02-progress-and-offline-sync
 ```
 
 ## Progress
-- [ ] Implementation complete
-- [ ] Validation passed
-- commit: pending
+- [x] Implementation complete
+- [x] Validation passed
+- commit: `6107f3c`

@@ -158,3 +158,20 @@ button:focus-visible { outline: 2px solid #85e4d5; outline-offset: 2px; }
   .control-settings-player { padding: 7px 9px; }
   .control-settings-player > div { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; }
 }
+
+#partner-dialog {
+  width: min(440px, calc(100vw - 32px));
+  max-width: none;
+  padding: 24px;
+  color: var(--ink, #effbff);
+  background: rgba(13, 31, 51, 0.97);
+  border: 1px solid rgba(111, 240, 225, 0.48);
+  border-radius: 20px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.56), 0 0 38px rgba(31, 220, 222, 0.16);
+}
+#partner-dialog::backdrop { background: rgba(3, 11, 23, 0.72); backdrop-filter: blur(5px); }
+.partner-form { display: grid; gap: 12px; }
+.partner-form h2 { margin: 0; }
+.partner-form label { color: #b8d8e5; font-size: 0.9rem; }
+.partner-form input { width: 100%; padding: 12px 14px; color: #effbff; background: #091827; border: 1px solid #3e7183; border-radius: 10px; font: inherit; }
+.partner-form input:focus-visible { outline: 2px solid #70f0df; outline-offset: 2px; }
