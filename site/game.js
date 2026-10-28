@@ -103,12 +103,30 @@
   const movingPlatform = (id, x, y, w, h, range, speed, phase = 0) => ({ id, x, y, w, h, baseX: x, baseY: y, range, speed, phase, kind: "moving" });
   const crate = (id, x, y, size = 38) => ({ id, x, y, w: size, h: size, vx: 0, vy: 0, weight: 1 });
   const door = (id, x, y, w, h, switchId) => ({ id, x, y, w, h, switchId, kind: "door" });
-  const switchPad = (id, x, y) => ({ id, x, y, w: 34, h: 13, active: false });
+  const switchPad = (id, x, y, options = {}) => ({
+    id,
+    x,
+    y,
+    w: 34,
+    h: 13,
+    active: false,
+    requiresLaunch: options.requiresLaunch === true,
+    hidden: options.hidden === true,
+    latchOnLaunch: options.latchOnLaunch === true,
+    unlockBonusStage: options.unlockBonusStage === true,
+  });
 
   const STAGES = [
     {
       id: 0,
       name: "첫 연결",
+      card: {
+        name: "첫 연결",
+        objective: "파트너를 발사해 첫 문을 열고 함께 출구에 도착하세요",
+        gimmick: "던져서 작동하는 첫 스위치",
+        difficulty: 1,
+        estimatedMinutes: 3,
+      },
       width: 1800,
       height: VIEW.height,
       spawns: [{ x: 92, y: 440 }, { x: 154, y: 440 }],
@@ -121,7 +139,7 @@
         platform(1480, 425, 215),
       ],
       hazards: [hazard(470, 470, 90), hazard(1090, 470, 115), hazard(1405, 470, 65)],
-      switches: [switchPad("door-one", 700, 327)],
+      switches: [switchPad("door-one", 700, 327, { requiresLaunch: true })],
       movingPlatforms: [movingPlatform("lift-one", 1040, 305, 120, 18, 90, 1.1)],
       crates: [crate("crate-one", 630, 300)],
       doors: [door("door-one", 1332, 420, 34, 80, "door-one")],
@@ -130,6 +148,13 @@
     {
       id: 1,
       name: "엇갈린 발판",
+      card: {
+        name: "엇갈린 발판",
+        objective: "발판과 줄을 이용해 두 문을 지나 출구에 도착하세요",
+        gimmick: "높은 숨은 스위치를 찾아 보너스 구역 해제",
+        difficulty: 2,
+        estimatedMinutes: 5,
+      },
       width: 2150,
       height: VIEW.height,
       spawns: [{ x: 90, y: 440 }, { x: 155, y: 440 }],
@@ -145,7 +170,16 @@
         platform(1980, 420, 120),
       ],
       hazards: [hazard(450, 470, 110), hazard(920, 470, 110), hazard(1420, 470, 160), hazard(1900, 470, 80)],
-      switches: [switchPad("door-two-a", 720, 337), switchPad("door-two-b", 1170, 362)],
+      switches: [
+        switchPad("door-two-a", 720, 337, { requiresLaunch: true }),
+        switchPad("door-two-b", 1170, 362),
+        switchPad("bonus-high-switch", 1515, 225, {
+          requiresLaunch: true,
+          hidden: true,
+          latchOnLaunch: true,
+          unlockBonusStage: true,
+        }),
+      ],
       movingPlatforms: [
         movingPlatform("lift-two-a", 430, 270, 110, 18, 110, 1.25, 1),
         movingPlatform("lift-two-b", 1390, 300, 120, 18, 130, 1.5, 2),
@@ -157,6 +191,13 @@
     {
       id: 2,
       name: "마지막 당김",
+      card: {
+        name: "마지막 당김",
+        objective: "연속 장애물을 넘고 두 플레이어가 출구에 도착하세요",
+        gimmick: "먼 발판을 여는 발사 스위치",
+        difficulty: 3,
+        estimatedMinutes: 6,
+      },
       width: 2450,
       height: VIEW.height,
       spawns: [{ x: 90, y: 440 }, { x: 155, y: 440 }],
@@ -175,7 +216,11 @@
         platform(2190, 360, 170),
       ],
       hazards: [hazard(335, 470, 135), hazard(825, 470, 155), hazard(1345, 470, 175), hazard(1880, 470, 170)],
-      switches: [switchPad("door-three-a", 610, 302), switchPad("door-three-b", 1140, 327), switchPad("door-three-c", 1740, 297)],
+      switches: [
+        switchPad("door-three-a", 610, 302),
+        switchPad("door-three-b", 1140, 327),
+        switchPad("door-three-c", 1740, 297, { requiresLaunch: true }),
+      ],
       movingPlatforms: [
         movingPlatform("lift-three-a", 350, 250, 105, 18, 115, 1.5, 1),
         movingPlatform("lift-three-b", 1270, 250, 110, 18, 150, 1.2, 2),
@@ -188,6 +233,46 @@
         door("door-three-c", 1885, 420, 34, 80, "door-three-c"),
       ],
       exit: { x: 2320, y: 280, w: 78, h: 140 },
+    },
+    {
+      id: 3,
+      name: "하늘 릴레이",
+      card: {
+        name: "하늘 릴레이",
+        objective: "한 명이 스위치를 잡고, 다른 한 명을 던져 연속 장치를 여세요",
+        gimmick: "협동 발사 릴레이",
+        difficulty: 4,
+        estimatedMinutes: 5,
+      },
+      width: 1700,
+      height: VIEW.height,
+      spawns: [{ x: 90, y: 440 }, { x: 150, y: 440 }],
+      platforms: [
+        platform(0, 500, 300, 40, "ground"),
+        platform(420, 500, 260, 40, "ground"),
+        platform(820, 500, 280, 40, "ground"),
+        platform(1280, 500, 420, 40, "ground"),
+        platform(220, 390, 150),
+        platform(520, 345, 140),
+        platform(720, 420, 120),
+        platform(980, 350, 150),
+        platform(1200, 410, 130),
+        platform(1430, 330, 170),
+      ],
+      hazards: [hazard(300, 470, 120), hazard(680, 470, 140), hazard(1100, 470, 180)],
+      switches: [
+        switchPad("relay-hold", 250, 487),
+        switchPad("relay-launch-a", 585, 332, { requiresLaunch: true, latchOnLaunch: true }),
+        switchPad("relay-launch-b", 1030, 337, { requiresLaunch: true, latchOnLaunch: true }),
+      ],
+      movingPlatforms: [movingPlatform("relay-lift", 1120, 280, 110, 18, 55, 1.1, 0)],
+      crates: [],
+      doors: [
+        door("relay-door-a", 390, 420, 34, 80, "relay-hold"),
+        door("relay-door-b", 760, 420, 34, 80, "relay-launch-a"),
+        door("relay-door-c", 1160, 420, 34, 80, "relay-launch-b"),
+      ],
+      exit: { x: 1580, y: 290, w: 72, h: 110 },
     },
   ];
 
@@ -802,10 +887,16 @@
         }
       }
       for (const item of this.stage.switches) {
-        const occupied = this.players.some((player) => intersects(player.bounds, { x: item.x - 4, y: item.y - 18, w: item.w + 8, h: item.h + 20 }))
-          || this.crates.some((box) => intersects(box, { x: item.x - 4, y: item.y - 18, w: item.w + 8, h: item.h + 20 }));
-        if (occupied && !this.stageState.switches[item.id]) this.audio.beep(660, 0.12, "sine");
-        this.stageState.switches[item.id] = occupied;
+        const activationArea = { x: item.x - 4, y: item.y - 18, w: item.w + 8, h: item.h + 20 };
+        const occupiedByPlayer = this.players.some((player) => (
+          (!item.requiresLaunch || player.launchTimer > 0) && intersects(player.bounds, activationArea)
+        ));
+        const occupiedByCrate = !item.requiresLaunch && this.crates.some((box) => intersects(box, activationArea));
+        const occupied = occupiedByPlayer || occupiedByCrate;
+        const wasActive = this.stageState.switches[item.id];
+        const nextActive = item.latchOnLaunch ? wasActive || occupied : occupied;
+        if (nextActive && !wasActive) this.audio.beep(660, 0.12, "sine");
+        this.stageState.switches[item.id] = nextActive;
       }
       for (const item of this.stage.doors) this.stageState.doors[item.id] = this.stageState.switches[item.switchId] === true;
     }
@@ -1029,6 +1120,7 @@
 
     drawSwitch(item) {
       const active = this.stageState.switches[item.id];
+      if (item.hidden && !active) return;
       ctx.fillStyle = active ? "#9fffe8" : "#d19cff";
       ctx.fillRect(item.x, item.y, item.w, item.h);
       ctx.fillStyle = active ? "#54d4bd" : "#784fb0";
