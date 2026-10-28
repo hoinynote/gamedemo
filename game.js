@@ -12,6 +12,7 @@
     jumpSpeed: 650,
     ropeTensionAcceleration: 7,
     ropeLaunchImpulse: 1000,
+    ropeLaunchDuration: 0.35,
     playerWidth: 24,
     playerHeight: 38,
   };
@@ -322,6 +323,7 @@
       this.coyoteTimer = 0;
       this.jumpBufferTimer = 0;
       this.dropTimer = 0;
+      this.launchTimer = 0;
     }
 
     get bounds() { return { x: this.x, y: this.y, w: this.width, h: this.height }; }
@@ -588,6 +590,7 @@
           vy: player.vy,
           facing: player.facing,
           onGround: player.onGround,
+          launchTimer: player.launchTimer,
         })),
         ropes: this.ropes.map((rope) => ({
           state: rope.state,
@@ -617,6 +620,7 @@
         Object.assign(player, {
           x: saved.x, y: saved.y, vx: saved.vx || 0, vy: saved.vy || 0,
           facing: saved.facing === -1 ? -1 : 1, onGround: Boolean(saved.onGround),
+          launchTimer: Number.isFinite(saved.launchTimer) ? Math.max(0, saved.launchTimer) : 0,
         });
       }
       if (snapshot.stageState) {
@@ -721,12 +725,15 @@
       for (const player of this.players) {
         const controls = this.getControls(player);
         const direction = (this.input.isDown(controls.right) ? 1 : 0) - (this.input.isDown(controls.left) ? 1 : 0);
-        if (direction !== 0) {
-          player.vx = clamp(player.vx + direction * PHYSICS.moveAcceleration * delta, -PHYSICS.maxSpeed, PHYSICS.maxSpeed);
-          player.facing = direction;
-        } else {
-          player.vx *= Math.pow(PHYSICS.friction, delta * 60);
-          if (Math.abs(player.vx) < 2) player.vx = 0;
+        player.launchTimer = Math.max(0, player.launchTimer - delta);
+        if (player.launchTimer <= 0) {
+          if (direction !== 0) {
+            player.vx = clamp(player.vx + direction * PHYSICS.moveAcceleration * delta, -PHYSICS.maxSpeed, PHYSICS.maxSpeed);
+            player.facing = direction;
+          } else {
+            player.vx *= Math.pow(PHYSICS.friction, delta * 60);
+            if (Math.abs(player.vx) < 2) player.vx = 0;
+          }
         }
 
         if (this.input.wasPressed(controls.jump)) player.jumpBufferTimer = 0.13;
@@ -753,7 +760,7 @@
         this.resolveHorizontal(player);
         player.y += player.vy * delta;
         this.resolveVertical(player, previousY);
-        if (previousX !== player.x && player.onGround) player.vx *= 0.99;
+        if (previousX !== player.x && player.onGround && player.launchTimer <= 0) player.vx *= 0.99;
         player.x = clamp(player.x, 0, this.stage.width - player.width);
         if (player.y > VIEW.height + 160) this.resetStage();
       }
@@ -868,6 +875,8 @@
             owner.vy -= dy * PHYSICS.ropeLaunchImpulse;
             target.vx += dx * PHYSICS.ropeLaunchImpulse;
             target.vy += dy * PHYSICS.ropeLaunchImpulse;
+            owner.launchTimer = PHYSICS.ropeLaunchDuration;
+            target.launchTimer = PHYSICS.ropeLaunchDuration;
             for (const connectedRope of this.ropes) {
               if (connectedRope.state !== "attached") continue;
               if (connectedRope.ownerId !== owner.id && connectedRope.targetPlayerId !== owner.id) continue;
