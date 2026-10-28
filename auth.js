@@ -227,6 +227,32 @@
       try { window.localStorage.removeItem(this.pendingKey(ownerId)); } catch { /* storage may be unavailable */ }
     }
 
+    deletionKey(ownerId) { return `tugmate:deletion-pending:v1:${encodeURIComponent(ownerId)}`; }
+
+    hasDeletionTombstone(ownerId) {
+      try { return window.localStorage.getItem(this.deletionKey(ownerId)) === "pending"; } catch { return false; }
+    }
+
+    markDeletionPending(ownerId = this.getOwnerId()) {
+      if (!ownerId || this.localPreview || this.status !== "authenticated") throw new Error("회사 계정으로 로그인해 주세요.");
+      try { window.localStorage.setItem(this.deletionKey(ownerId), "pending"); } catch (error) { throw new Error("삭제 대기 표시를 저장할 수 없어 안전하게 삭제를 진행하지 못했습니다."); }
+      this.clearOwnerData(ownerId);
+      return true;
+    }
+
+    async completePendingDeletion(ownerId = this.getOwnerId()) {
+      if (!this.hasDeletionTombstone(ownerId)) return false;
+      await this.requestApi("/api/me", { method: "DELETE" });
+      try { window.localStorage.removeItem(this.deletionKey(ownerId)); } catch { /* server deletion already succeeded */ }
+      this.profile = null;
+      return true;
+    }
+
+    async deleteCurrentAccountData(ownerId = this.getOwnerId()) {
+      this.markDeletionPending(ownerId);
+      return this.completePendingDeletion(ownerId);
+    }
+
     async enterLocalPreview() {
       if (!isLocalPreviewHost() || this.config?.configured) throw new Error("로컬 미리보기는 localhost에서만 사용할 수 있습니다.");
       this.localPreview = true;

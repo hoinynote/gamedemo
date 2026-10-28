@@ -1,6 +1,6 @@
 # Task: T03 Leaderboard and Deletion UI
 
-## Status: pending
+## Status: done
 
 ## Goal
 Add an accessible stage-tab leaderboard that shows best times and campaign progress, plus a self-service deletion flow for the signed-in account.
@@ -36,10 +36,10 @@ Add an accessible stage-tab leaderboard that shows best times and campaign progr
   - After deletion is confirmed, next explicit entry to the stage map may create a fresh empty account profile.
 
 ## Acceptance Criteria
-- [ ] Four stage tabs show server-ranked PB times with stage and campaign progress.
-- [ ] Unrecorded users are visible with display name and no-record label; no email/immutable IDs render.
-- [ ] Delete flow removes only the current user and prevents offline queued records from restoring deleted data.
-- [ ] Keyboard and screen-reader state for tabs/dialog/loading/errors is clear.
+- [x] Four stage tabs show server-ranked PB times with stage and campaign progress.
+- [x] Unrecorded users are visible with display name and no-record label; no email/immutable IDs render.
+- [x] Delete flow removes only the current user and prevents offline queued records from restoring deleted data.
+- [x] Keyboard and screen-reader state for tabs/dialog/loading/errors is clear.
 
 ## Validation
 - `node --check game.js`
@@ -60,6 +60,6 @@ Task: T03-leaderboard-and-deletion-ui
 ```
 
 ## Progress
-- [ ] Implementation complete
-- [ ] Validation passed
-- commit: pending
+- [x] Implementation complete
+- [x] Validation passed
+- commit: `e1eb86f`

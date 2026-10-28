@@ -551,6 +551,12 @@
         event.preventDefault();
         this.cancelNewRun();
       });
+      document.querySelector("#leaderboard-button")?.addEventListener("click", () => this.openLeaderboard());
+      document.querySelector("#leaderboard-close-button")?.addEventListener("click", () => this.closeLeaderboard());
+      document.querySelector("#leaderboard-retry-button")?.addEventListener("click", () => this.loadLeaderboard(this.leaderboardStageId));
+      document.querySelector("#delete-account-button")?.addEventListener("click", () => this.openDeleteDialog());
+      document.querySelector("#delete-account-cancel-button")?.addEventListener("click", () => document.querySelector("#delete-account-dialog")?.close());
+      document.querySelector("#delete-account-confirm-button")?.addEventListener("click", () => this.deleteMyData());
       this.initializeAuth();
       requestAnimationFrame((timestamp) => this.frame(timestamp));
     }
@@ -627,6 +633,19 @@
       if (cachedCheckpoint && !this.savedCheckpoint) CheckpointStore.clear();
       this.activeAttempt = RunSessionStore.load(this.ownerId);
       if (this.authState.status === "authenticated") {
+        if (this.auth.hasDeletionTombstone(this.ownerId)) {
+          this.clearLocalOwnerData(this.ownerId);
+          try {
+            await this.auth.completePendingDeletion(this.ownerId);
+            this.authState.error = "삭제 대기 중이던 회사 기록을 삭제했습니다. 다시 시작하면 새 기록으로 진행합니다.";
+          } catch {
+            this.authState.error = "기록 삭제가 아직 서버에 전달되지 않았습니다. 연결 후 ‘게임 시작’을 누르면 삭제를 다시 시도합니다.";
+          }
+          this.stageAccessReady = false;
+          this.mode = "menu";
+          this.renderUI();
+          return false;
+        }
         try {
           const response = await this.auth.requestApi("/api/me");
           this.auth.profile = response.profile;
@@ -663,6 +682,140 @@
       this.mode = "menu";
       this.renderUI();
       return true;
+    }
+
+    clearLocalOwnerData(ownerId) {
+      CampaignProgressStore.clear(ownerId);
+      if (CheckpointStore.load()?.ownerId === ownerId) CheckpointStore.clear();
+      if (RunSessionStore.load(ownerId)) RunSessionStore.clear();
+      this.auth.clearOwnerData(ownerId);
+      this.campaignProgress = CampaignProgressStore.defaults();
+      this.savedCheckpoint = null;
+      this.activeAttempt = null;
+      this.cloudStageRecords = {};
+    }
+
+    openDeleteDialog() {
+      const accountName = this.authState.displayName || this.auth.getDisplayName();
+      document.querySelector("#delete-account-description").textContent = `${accountName} 계정의 클리어 기록, 스테이지 해제, 최고 시간과 이 브라우저의 동기화 대기 기록을 삭제합니다. 삭제 후 복구할 수 없습니다.`;
+      document.querySelector("#delete-account-status").textContent = "";
+      document.querySelector("#delete-account-dialog")?.showModal();
+    }
+
+    async deleteMyData() {
+      const confirmButton = document.querySelector("#delete-account-confirm-button");
+      const status = document.querySelector("#delete-account-status");
+      if (this.authState.status !== "authenticated") return;
+      confirmButton.disabled = true;
+      status.textContent = "삭제를 요청하고 있습니다.";
+      let tombstoneSaved = false;
+      try {
+        this.auth.markDeletionPending(this.ownerId);
+        tombstoneSaved = true;
+        this.clearLocalOwnerData(this.ownerId);
+        await this.auth.completePendingDeletion(this.ownerId);
+        this.authState.error = "회사 게임 기록을 삭제했습니다. 원하면 새 진행으로 다시 시작할 수 있습니다.";
+      } catch {
+        if (tombstoneSaved) this.clearLocalOwnerData(this.ownerId);
+        this.authState.error = tombstoneSaved
+          ? "삭제 요청을 서버에 전달하지 못했습니다. 삭제 대기 상태로 저장했으며, 연결 후 게임 시작을 누르면 다시 시도합니다."
+          : "브라우저에 삭제 대기 표시를 저장하지 못했습니다. 기록을 유지했으니 저장 공간을 확인한 뒤 다시 시도해 주세요.";
+      } finally {
+        confirmButton.disabled = false;
+      }
+      document.querySelector("#delete-account-dialog")?.close();
+      this.stageAccessReady = false;
+      this.mode = "menu";
+      this.renderUI();
+    }
+
+    async openLeaderboard() {
+      if (this.authState.status !== "authenticated" || !this.stageAccessReady) return;
+      this.mode = "leaderboard";
+      this.renderUI();
+      this.renderLeaderboardTabs();
+      await this.loadLeaderboard(this.leaderboardStageId ?? 0);
+    }
+
+    closeLeaderboard() {
+      this.mode = "menu";
+      this.renderUI();
+    }
+
+    renderLeaderboardTabs() {
+      const tabs = document.querySelector("#leaderboard-tabs");
+      if (!tabs) return;
+      tabs.replaceChildren();
+      for (const stage of STAGES) {
+        const tab = document.createElement("button");
+        tab.type = "button";
+        tab.id = `leaderboard-tab-${stage.id}`;
+        tab.className = "leaderboard-tab";
+        tab.setAttribute("role", "tab");
+        tab.setAttribute("aria-controls", "leaderboard-entries");
+        tab.setAttribute("aria-selected", String(stage.id === this.leaderboardStageId));
+        tab.tabIndex = stage.id === this.leaderboardStageId ? 0 : -1;
+        tab.textContent = stage.card.name;
+        tab.addEventListener("click", () => this.loadLeaderboard(stage.id));
+        tab.addEventListener("keydown", (event) => {
+          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+          event.preventDefault();
+          const next = event.key === "Home" ? 0 : event.key === "End" ? STAGES.length - 1
+            : (stage.id + (event.key === "ArrowRight" ? 1 : STAGES.length - 1)) % STAGES.length;
+          this.loadLeaderboard(next).then(() => document.querySelector(`#leaderboard-tab-${next}`)?.focus());
+        });
+        tabs.append(tab);
+      }
+    }
+
+    async loadLeaderboard(stageId) {
+      if (!Number.isInteger(stageId) || stageId < 0 || stageId >= STAGES.length) return;
+      this.leaderboardStageId = stageId;
+      this.renderLeaderboardTabs();
+      const status = document.querySelector("#leaderboard-status");
+      const rows = document.querySelector("#leaderboard-entries");
+      rows.setAttribute("role", "tabpanel");
+      rows.setAttribute("aria-labelledby", `leaderboard-tab-${stageId}`);
+      rows.tabIndex = 0;
+      const retry = document.querySelector("#leaderboard-retry-button");
+      status.textContent = "랭킹을 불러오고 있습니다.";
+      retry.hidden = true;
+      rows.replaceChildren();
+      try {
+        const response = await this.auth.requestApi(`/api/leaderboard?stageId=${stageId}`);
+        if (!Array.isArray(response?.entries)) throw new Error("랭킹 응답 형식이 올바르지 않습니다.");
+        response.entries.forEach((entry) => {
+          const row = document.createElement("li");
+          row.className = "leaderboard-row";
+          if (entry.isCurrentUser) row.classList.add("is-current-user");
+          const rank = document.createElement("span");
+          rank.className = "leaderboard-rank";
+          rank.textContent = entry.rank ? `#${entry.rank}` : "—";
+          const name = document.createElement("strong");
+          name.className = "leaderboard-name";
+          name.textContent = entry.record?.teamLabel || `${entry.displayName || "회사 플레이어"} · 미기록`;
+          const time = document.createElement("span");
+          time.className = "leaderboard-time";
+          time.textContent = entry.record?.bestMs ? this.formatLeaderboardTime(entry.record.bestMs) : "미기록";
+          const progress = document.createElement("span");
+          progress.className = "leaderboard-progress";
+          const campaignCount = Math.max(0, Math.min(3, Number(entry.progress?.clearedCampaignStages) || 0));
+          progress.textContent = `${campaignCount}/3${entry.progress?.bonusStageUnlocked ? " · 비밀 구역 해제" : ""}`;
+          row.append(rank, name, time, progress);
+          rows.append(row);
+        });
+        status.textContent = response.entries.length ? `${STAGES[stageId].card.name} · ${response.entries.length}명` : "아직 표시할 기록이 없습니다.";
+      } catch (error) {
+        status.textContent = error.message || "랭킹을 불러오지 못했습니다. 연결을 확인해 주세요.";
+        retry.hidden = false;
+      }
+    }
+
+    formatLeaderboardTime(milliseconds) {
+      const tenths = Math.floor(milliseconds / 100);
+      const minutes = Math.floor(tenths / 600);
+      const seconds = Math.floor((tenths % 600) / 10).toString().padStart(2, "0");
+      return `${minutes}:${seconds}.${tenths % 10}`;
     }
 
     mergeCloudProfile(profile) {
@@ -1805,14 +1958,20 @@
 
     renderUI() {
       const showMap = this.stageAccessReady && this.mode === "menu" && !this.controlsOpen;
+      const showLeaderboard = this.stageAccessReady && this.mode === "leaderboard" && !this.controlsOpen;
       const showTitle = !this.stageAccessReady && !this.controlsOpen;
       this.showOverlay("#auth-screen", showTitle);
       this.showOverlay("#menu-screen", showMap);
+      this.showOverlay("#leaderboard-screen", showLeaderboard);
       this.showOverlay("#pause-screen", this.stageAccessReady && this.mode === "paused" && !this.controlsOpen);
       this.showOverlay("#clear-screen", this.stageAccessReady && this.mode === "won");
       if (showTitle) this.renderAuthScreen();
       if (showMap) {
         this.renderAuthScreen();
+        const leaderboardButton = document.querySelector("#leaderboard-button");
+        if (leaderboardButton) leaderboardButton.hidden = this.authState.status !== "authenticated";
+        const deleteButton = document.querySelector("#delete-account-button");
+        if (deleteButton) deleteButton.hidden = this.authState.status !== "authenticated";
         const checkpoint = CheckpointStore.load(this.ownerId);
         this.savedCheckpoint = checkpoint;
         const renderKey = JSON.stringify({ progress: this.campaignProgress, savedAt: checkpoint?.savedAt || null });

@@ -175,3 +175,32 @@ button:focus-visible { outline: 2px solid #85e4d5; outline-offset: 2px; }
 .partner-form label { color: #b8d8e5; font-size: 0.9rem; }
 .partner-form input { width: 100%; padding: 12px 14px; color: #effbff; background: #091827; border: 1px solid #3e7183; border-radius: 10px; font: inherit; }
 .partner-form input:focus-visible { outline: 2px solid #70f0df; outline-offset: 2px; }
+
+#delete-account-dialog {
+  width: min(520px, calc(100vw - 32px));
+  max-width: none;
+  padding: 24px;
+  color: #effbff;
+  background: rgba(13, 31, 51, 0.98);
+  border: 1px solid rgba(255, 124, 120, 0.58);
+  border-radius: 20px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.56);
+}
+#delete-account-dialog::backdrop { background: rgba(3, 11, 23, 0.74); backdrop-filter: blur(5px); }
+.leaderboard-screen { align-content: start; justify-items: stretch; overflow-y: auto; }
+.leaderboard-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.leaderboard-heading h2 { margin: 0; }
+.leaderboard-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 8px; }
+.leaderboard-tab { flex: 0 0 auto; color: #bfe2ed; background: rgba(13, 34, 53, 0.88); border: 1px solid rgba(104, 181, 201, 0.35); border-radius: 999px; padding: 9px 14px; font: inherit; cursor: pointer; }
+.leaderboard-tab[aria-selected="true"] { color: #061b28; background: #76f0de; border-color: #76f0de; font-weight: 800; }
+.leaderboard-entries { display: grid; gap: 7px; max-height: 44vh; overflow-y: auto; list-style: none; margin: 0; padding: 0 4px 4px 0; }
+.leaderboard-row { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 11px 14px; color: #e8f8ff; background: rgba(9, 25, 40, 0.78); border: 1px solid rgba(103, 170, 194, 0.22); border-radius: 12px; }
+.leaderboard-row.is-current-user { border-color: #76f0de; box-shadow: inset 3px 0 #76f0de; }
+.leaderboard-rank { color: #76f0de; font-weight: 800; }
+.leaderboard-name { overflow-wrap: anywhere; }
+.leaderboard-time { color: #ffdc8a; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.leaderboard-progress { color: #a9c7d2; font-size: 0.82rem; text-align: right; }
+@media (max-width: 620px) {
+  .leaderboard-row { grid-template-columns: 38px minmax(0, 1fr) auto; gap: 7px; padding: 10px; }
+  .leaderboard-progress { grid-column: 2 / -1; text-align: left; }
+}

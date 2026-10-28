@@ -5,7 +5,7 @@
 | :--- | :--- | :--- | :--- |
 | T01 | `done` | Add tenant-only MSAL sign-in, signed-in identity state, and gated app entry | [T01](./T01-entra-client.md) |
 | T02 | `done` | Persist partner label and stage attempt timer; sync progress/results with offline retry | [T02](./T02-progress-and-offline-sync.md) |
-| T03 | `in_progress` | Add stage leaderboard tabs and account-owned data deletion UI | [T03](./T03-leaderboard-and-deletion-ui.md) |
+| T03 | `done` | Add stage leaderboard tabs and account-owned data deletion UI | [T03](./T03-leaderboard-and-deletion-ui.md) |
 
 ## Progress
-- done: 2/3 (active: T03)
+- done: 3/3 (complete)
