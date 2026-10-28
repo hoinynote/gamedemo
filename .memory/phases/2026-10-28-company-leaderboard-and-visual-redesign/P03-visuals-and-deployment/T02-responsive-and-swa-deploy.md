@@ -1,6 +1,6 @@
 # Task: T02 Responsive Viewport and SWA Deploy
 
-## Status: pending
+## Status: done
 
 ## Goal
 Expand the play frame to the available browser size, add optional fullscreen, configure the existing official Azure SWA workflow to deploy both static assets and Functions API, and keep the `site/` deployment mirror exact.
@@ -36,11 +36,11 @@ Expand the play frame to the available browser size, add optional fullscreen, co
   - Preserve the separate lively-rock workflow unchanged; do not push or run an Azure deployment from this task.
 
 ## Acceptance Criteria
-- [ ] Game frame fills approximately 94% of available width while remaining 16:9 and height-bounded; fullscreen remains opt-in.
-- [ ] Official blue-coast workflow deploys `site/` plus the API folder with Node 22.
-- [ ] Root and `site/` runtime files are byte-identical after sync and validation passes.
-- [ ] No tenant credential, API secret, or Cosmos key is committed.
-- [ ] No Azure resource or remote repository is changed by this task.
+- [x] Game frame fills approximately 94% of available width while remaining 16:9 and height-bounded; fullscreen remains opt-in.
+- [x] Official blue-coast workflow deploys `site/` plus the API folder with Node 22.
+- [x] Root and `site/` runtime files are byte-identical after sync and validation passes.
+- [x] No tenant credential, API secret, or Cosmos key is committed.
+- [x] No Azure resource or remote repository is changed by this task.
 
 ## Validation
 - `node --check game.js`
@@ -63,6 +63,6 @@ Task: T02-responsive-and-swa-deploy
 ```
 
 ## Progress
-- [ ] Implementation complete
-- [ ] Validation passed
-- commit: pending
+- [x] Implementation complete
+- [x] Validation passed
+- commit: `b86be73`

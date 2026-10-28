@@ -15,7 +15,7 @@ Turn Tugmate into a company-only, sign-in-gated game on Azure Static Web Apps wi
 | :--- | :--- | :--- | :--- |
 | P01 | `done` | Secure Functions API, Cosmos adapters, contract, and deployment setup guide | [P01](../phases/2026-10-28-company-leaderboard-and-visual-redesign/P01-api-and-data/phase.md) |
 | P02 | `done` | Entra sign-in, team-run timing, cloud progress, offline queue, rankings, and data deletion | [P02](../phases/2026-10-28-company-leaderboard-and-visual-redesign/P02-client-and-sync/phase.md) |
-| P03 | `in_progress` | Separate intro/map views, holographic map, responsive game sizing, and Azure workflow integration | [P03](../phases/2026-10-28-company-leaderboard-and-visual-redesign/P03-visuals-and-deployment/phase.md) |
+| P03 | `done` | Separate intro/map views, holographic map, responsive game sizing, and Azure workflow integration | [P03](../phases/2026-10-28-company-leaderboard-and-visual-redesign/P03-visuals-and-deployment/phase.md) |
 
 ## Completion Conditions
 - API unit tests cover tenant/token rejection, profile ownership, best-time merge, stage bounds, Cosmos NoSQL/Table adapters, and deletion.

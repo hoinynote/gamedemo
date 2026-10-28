@@ -563,6 +563,8 @@
 
     bindUI() {
       document.querySelector("#start-button")?.addEventListener("click", () => this.handleTitleStart());
+      document.querySelector("#fullscreen-button")?.addEventListener("click", () => this.toggleFullscreen());
+      document.addEventListener("fullscreenchange", () => this.updateFullscreenButton());
       document.querySelector("#local-preview-button")?.addEventListener("click", () => this.enterLocalPreview());
       document.querySelector("#auth-controls-button")?.addEventListener("click", () => this.openControls("#auth-screen"));
       document.querySelector("#sign-out-button")?.addEventListener("click", () => this.signOut());
@@ -575,6 +577,30 @@
       document.querySelector("#pause-controls-button").addEventListener("click", () => this.openControls("#pause-screen"));
       document.querySelector("#pause-resume-button").addEventListener("click", () => this.resume());
       document.querySelector("#pause-menu-button").addEventListener("click", () => this.returnToMenu());
+    }
+
+    async toggleFullscreen() {
+      const frame = document.querySelector(".game-frame");
+      const status = document.querySelector("#fullscreen-status");
+      try {
+        if (document.fullscreenElement) await document.exitFullscreen();
+        else if (frame?.requestFullscreen) await frame.requestFullscreen();
+        else if (status) status.textContent = "이 브라우저에서는 전체 화면을 사용할 수 없습니다.";
+      } catch {
+        if (status) status.textContent = "전체 화면 전환이 차단되었습니다. 브라우저 권한을 확인해 주세요.";
+      }
+      this.updateFullscreenButton();
+    }
+
+    updateFullscreenButton() {
+      const button = document.querySelector("#fullscreen-button");
+      if (!button) return;
+      const active = document.fullscreenElement === document.querySelector(".game-frame");
+      button.setAttribute("aria-pressed", String(active));
+      button.textContent = active ? "전체 화면 종료" : "전체 화면";
+      if (!active && document.querySelector("#fullscreen-status")?.textContent.includes("전체 화면")) {
+        document.querySelector("#fullscreen-status").textContent = "";
+      }
     }
 
     async initializeAuth() {

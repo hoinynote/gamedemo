@@ -4,7 +4,7 @@
 | Task | Status | Summary | Blueprint |
 | :--- | :--- | :--- | :--- |
 | T01 | `done` | Separate public title and signed-in map; draw holographic stage route | [T01](./T01-title-and-holographic-map.md) |
-| T02 | `in_progress` | Enlarge responsive play area and integrate secure API/runtime into the official SWA deployment | [T02](./T02-responsive-and-swa-deploy.md) |
+| T02 | `done` | Enlarge responsive play area and integrate secure API/runtime into the official SWA deployment | [T02](./T02-responsive-and-swa-deploy.md) |
 
 ## Progress
-- done: 1/2 (active: T02)
+- done: 2/2 (complete)

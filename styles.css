@@ -269,3 +269,19 @@ button:focus-visible { outline: 2px solid #85e4d5; outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+.game-shell { width: 100%; max-width: none; min-height: 100vh; min-height: 100dvh; padding: clamp(8px, 1.4vw, 22px); gap: 8px; }
+.game-frame { width: min(94vw, 1600px, calc((100vh - 88px) * 16 / 9)); width: min(94vw, 1600px, calc((100dvh - 88px) * 16 / 9)); aspect-ratio: 16 / 9; }
+.game-toolbar { position: absolute; z-index: 20; top: 10px; right: 10px; display: flex; align-items: center; gap: 8px; max-width: calc(100% - 20px); }
+.fullscreen-button { padding: 7px 11px; color: #d9f4ff; border: 1px solid rgba(141, 214, 234, 0.42); border-radius: 999px; background: rgba(6, 19, 34, 0.76); backdrop-filter: blur(8px); font-size: 11px; font-weight: 750; cursor: pointer; }
+.fullscreen-button:hover, .fullscreen-button:focus-visible, .fullscreen-button[aria-pressed="true"] { color: #071a25; border-color: #8af0dc; background: #8af0dc; }
+.fullscreen-status { color: #ffe6ab; font-size: 10px; text-shadow: 0 1px 5px #07121e; }
+.game-frame:fullscreen { width: min(100vw, calc(100dvh * 16 / 9)); height: auto; max-width: none; aspect-ratio: 16 / 9; margin: auto; border: 0; border-radius: 0; background: #080d1d; }
+.game-frame:fullscreen canvas { width: 100%; height: 100%; }
+.overlay#auth-screen, .overlay#menu-screen, .overlay#leaderboard-screen, .overlay.controls-screen { max-height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+@media (max-width: 620px) {
+  .game-shell { padding: 8px; }
+  .game-frame { width: min(94vw, calc((100dvh - 74px) * 16 / 9)); border-radius: 16px; }
+  .game-toolbar { top: 6px; right: 6px; }
+  .fullscreen-button { padding: 6px 8px; font-size: 10px; }
+}

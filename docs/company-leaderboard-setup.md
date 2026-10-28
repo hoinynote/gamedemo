@@ -74,7 +74,11 @@ Azure Portal에서 SWA의 **Environment variables**에 다음 값을 추가합�
 
 배포 후 `/api/config`가 Entra 공개 설정만 반환하는지, 다른 테넌트 토큰이 거부되는지, 로그인 계정의 미기록 행이 랭킹에 보이는지 확인합니다. Cosmos 연결이 설정되지 않으면 회사 로그인 뒤에도 플레이할 수 있지만 결과는 브라우저에 동기화 대기 상태로 저장됩니다.
 
-## 5. 로컬 개발
+## 5. GitHub 배포 흐름
+
+`azure-static-web-apps-blue-coast-030823200.yml` deploys the `site/` frontend and builds the Functions API from `api/` using the checked-in deployment token secret. `skip_app_build: true` skips only the frontend build; the workflow leaves API build enabled. Before pushing a frontend change, run `scripts/sync-site.ps1` and `scripts/sync-site.ps1 -Check`. Configure the three public Entra identifiers in root `auth-config.js` so the sync step copies them into `site/`. Keep API audience/scope and Cosmos credentials in the Static Web App server environment settings.
+
+## 6. 로컬 개발
 
 `api/local.settings.sample.json`을 `api/local.settings.json`으로 복사하고 로컬 전용 값으로 채웁니다. 실제 키가 든 파일은 Git에 추가하지 않습니다. Azure Functions Core Tools와 Azure Static Web Apps CLI가 설치된 환경에서 실행합니다.
 

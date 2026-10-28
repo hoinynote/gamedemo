@@ -10,8 +10,33 @@
     <main class="game-shell">
       <div class="game-frame">
         <canvas id="game-canvas" width="960" height="540" aria-label="협동 로프 점프 게임"></canvas>
+        <div class="game-toolbar">
+          <button id="fullscreen-button" class="fullscreen-button" type="button" aria-pressed="false">전체 화면</button>
+          <span id="fullscreen-status" class="fullscreen-status" aria-live="polite"></span>
+        </div>
 
-        <section id="menu-screen" class="overlay visible" aria-live="polite">
+        <section id="auth-screen" class="overlay visible" aria-labelledby="auth-title" aria-live="polite">
+          <div class="title-mark" aria-hidden="true">
+            <svg viewBox="0 0 160 112" role="presentation">
+              <path d="M18 76 C42 8 114 8 142 76" />
+              <path d="M30 78 C54 30 105 28 130 78" />
+              <circle cx="18" cy="76" r="7" /><circle cx="142" cy="76" r="7" />
+              <circle cx="56" cy="66" r="10" class="title-player-one" />
+              <circle cx="104" cy="66" r="10" class="title-player-two" />
+            </svg>
+          </div>
+          <p class="title-kicker">TWO PLAYERS · ONE ROPE · EVERYONE HOME</p>
+          <p class="eyebrow">TUGMATE · COMPANY CO-OP</p>
+          <h1 id="auth-title">함께 당기고, 함께 도약하세요</h1>
+          <p class="lead">두 플레이어가 로프로 협력해 각 구역의 출구를 찾아가요.</p>
+          <p class="title-promise">동료와 함께 던지고, 당기고, 미지의 구역을 열어보세요.</p>
+          <button id="start-button" class="primary-button" type="button" disabled>회사 계정으로 시작</button>
+          <button id="local-preview-button" class="secondary-button" type="button" hidden>로컬 미리보기</button>
+          <p id="auth-status" class="menu-status" aria-live="polite">회사 로그인 설정을 확인하고 있습니다.</p>
+          <button id="auth-controls-button" class="secondary-button" type="button">조작 설정</button>
+        </section>
+
+        <section id="menu-screen" class="overlay" aria-live="polite">
           <p class="eyebrow">터그메이트</p>
           <header class="menu-heading">
             <h1>함께 당기고, 함께 도착하세요</h1>
@@ -22,13 +47,20 @@
               <h2 id="stage-map-title">스테이지 진행도</h2>
               <p>출구에 도착해 다음 구역을 열어보세요.</p>
             </div>
-            <div id="stage-map" class="stage-map" role="list" aria-label="스테이지 진행도"></div>
+          <div class="stage-map-legend" aria-label="진행 상태">
+            <span data-state="completed">완료</span><span data-state="current">현재</span><span data-state="locked">잠김</span>
+          </div>
+          <div id="stage-map" class="stage-map" role="list" aria-label="스테이지 진행도"></div>
           </section>
           <div class="menu-actions">
             <button id="continue-run-button" class="primary-button" type="button" hidden>이어하기 <span>Enter</span></button>
             <button id="new-game-button" class="secondary-button" type="button">새 게임</button>
+            <button id="leaderboard-button" class="secondary-button" type="button">회사 랭킹</button>
+            <button id="delete-account-button" class="secondary-button" type="button">내 기록 삭제</button>
             <button id="controls-button" class="secondary-button" type="button">조작 설정</button>
+            <button id="sign-out-button" class="secondary-button" type="button">회사 계정 로그아웃</button>
           </div>
+          <p id="account-status" class="menu-status" aria-live="polite"></p>
           <p id="continue-run-status" class="menu-status" aria-live="polite"></p>
           <details class="menu-controls">
             <summary>조작 방법 보기</summary>
@@ -46,6 +78,30 @@
             <p class="hint"><kbd>R</kbd> 현재 스테이지 재시작 · <kbd>Esc</kbd> 일시정지</p>
           </details>
         </section>
+
+        <section id="leaderboard-screen" class="overlay leaderboard-screen" aria-labelledby="leaderboard-title" aria-live="polite">
+          <div class="leaderboard-heading">
+            <div><p class="eyebrow">DEX CONSULTING · LEADERBOARD</p><h2 id="leaderboard-title">스테이지별 기록</h2></div>
+            <button id="leaderboard-close-button" class="secondary-button" type="button">지도</button>
+          </div>
+          <div id="leaderboard-tabs" class="leaderboard-tabs" role="tablist" aria-label="랭킹 스테이지"></div>
+          <p id="leaderboard-status" class="menu-status" role="status" aria-live="polite"></p>
+          <ol id="leaderboard-entries" class="leaderboard-entries" aria-label="스테이지 랭킹"></ol>
+          <button id="leaderboard-retry-button" class="secondary-button" type="button" hidden>다시 불러오기</button>
+        </section>
+
+        <dialog id="delete-account-dialog" aria-labelledby="delete-account-title">
+          <div class="partner-form">
+            <p class="eyebrow">ACCOUNT DATA</p>
+            <h2 id="delete-account-title">내 게임 기록을 삭제할까요?</h2>
+            <p id="delete-account-description" class="lead"></p>
+            <p id="delete-account-status" class="menu-status" aria-live="polite"></p>
+            <div class="menu-actions">
+              <button id="delete-account-cancel-button" class="secondary-button" type="button">취소</button>
+              <button id="delete-account-confirm-button" class="primary-button" type="button">기록 삭제</button>
+            </div>
+          </div>
+        </dialog>
 
         <section id="controls-screen" class="overlay controls-screen" aria-live="polite">
           <p class="eyebrow">CONTROLS</p>
@@ -87,9 +143,28 @@
           <p id="clear-message" class="lead">다음 구역으로 이동합니다.</p>
           <button id="continue-button" class="primary-button" type="button">다음 스테이지 <span>Enter</span></button>
         </section>
+
+        <dialog id="partner-dialog" aria-labelledby="partner-dialog-title">
+          <form id="partner-form" method="dialog" class="partner-form">
+            <p class="eyebrow">NEW TEAM</p>
+            <h2 id="partner-dialog-title">함께 플레이할 팀을 정하세요</h2>
+            <label for="employee-name">회사 계정 이름</label>
+            <input id="employee-name" type="text" readonly />
+            <label for="partner-name">파트너 이름</label>
+            <input id="partner-name" name="partnerName" type="text" maxlength="40" required autocomplete="off" />
+            <p id="partner-form-status" class="menu-status" aria-live="polite"></p>
+            <div class="menu-actions">
+              <button id="partner-cancel-button" class="secondary-button" type="button">취소</button>
+              <button class="primary-button" type="submit">시작</button>
+            </div>
+          </form>
+        </dialog>
       </div>
       <p class="footer-note">브라우저 뒤로가기나 탭 전환 시 게임은 자동으로 일시정지되고 진행 상태가 저장됩니다.</p>
     </main>
+    <script src="vendor/msal-browser.min.js"></script>
+    <script src="auth-config.js"></script>
+    <script src="auth.js"></script>
     <script src="game.js"></script>
   </body>
 </html>

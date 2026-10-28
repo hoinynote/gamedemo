@@ -10,6 +10,10 @@
     <main class="game-shell">
       <div class="game-frame">
         <canvas id="game-canvas" width="960" height="540" aria-label="협동 로프 점프 게임"></canvas>
+        <div class="game-toolbar">
+          <button id="fullscreen-button" class="fullscreen-button" type="button" aria-pressed="false">전체 화면</button>
+          <span id="fullscreen-status" class="fullscreen-status" aria-live="polite"></span>
+        </div>
 
         <section id="auth-screen" class="overlay visible" aria-labelledby="auth-title" aria-live="polite">
           <div class="title-mark" aria-hidden="true">
