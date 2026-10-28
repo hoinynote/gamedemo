@@ -1,9 +1,9 @@
-# Plan: Platform Drop Ground Collision
+﻿# Plan: Disable Down-Key Platform Drop
 
 ## Goal
-아래 방향키로 공중 플랫폼을 통과하는 기존 동작은 유지하면서, 맵 바닥은 통과하지 못하도록 한다.
+Prevent either player's down key from dropping the character through platforms or ground, while retaining the configurable down key for downward rope aiming. Remove the obsolete platform-pass label from the controls UI and summary in both game-script copies.
 
 ## Phases
 | Phase | Status | Summary | Blueprint |
 | :--- | :--- | :--- | :--- |
-| P01 | `done` | 아래 키 플랫폼 통과 시 맵 바닥 충돌 보존 | [P01](../phases/2026-10-28-platform-drop-ground-collision/P01-ground-collision/phase.md) |
+| P01 | `done` | Removed down-key platform-drop behavior and retained the down-aim control in both game-script copies. | [P01](../phases/2026-10-28-platform-drop-ground-collision/P01-disable-platform-drop/phase.md) |

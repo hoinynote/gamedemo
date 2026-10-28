@@ -24,7 +24,7 @@
   });
   const CONTROL_ACTIONS = ["left", "right", "jump", "down", "rope", "boost"];
   const CONTROL_ACTION_LABELS = {
-    left: "왼쪽 이동", right: "오른쪽 이동", jump: "점프", down: "플랫폼 통과", rope: "로프 발사·해제", boost: "파트너 발사",
+    left: "왼쪽 이동", right: "오른쪽 이동", jump: "점프", down: "아래 조준", rope: "로프 발사·해제", boost: "파트너 발사",
   };
   const RESERVED_CONTROL_CODES = new Set(["Enter", "Escape", "Tab", "KeyR", "KeyN"]);
 
@@ -323,7 +323,6 @@
       this.onGround = false;
       this.coyoteTimer = 0;
       this.jumpBufferTimer = 0;
-      this.dropTimer = 0;
       this.launchTimer = 0;
     }
 
@@ -484,7 +483,7 @@
         const summary = document.querySelector(`#controls-summary-${player}`);
         if (summary) {
           const controls = this.controls[player];
-          summary.textContent = `${controlCodeLabel(controls.left)}/${controlCodeLabel(controls.right)} 이동 · ${controlCodeLabel(controls.jump)} 점프 · ${controlCodeLabel(controls.down)} 플랫폼 통과 · ${controlCodeLabel(controls.rope)} 로프 · ${controlCodeLabel(controls.boost)} 파트너 발사`;
+          summary.textContent = `${controlCodeLabel(controls.left)}/${controlCodeLabel(controls.right)} 이동 · ${controlCodeLabel(controls.jump)} 점프 · ${controlCodeLabel(controls.down)} 아래 조준 · ${controlCodeLabel(controls.rope)} 로프 · ${controlCodeLabel(controls.boost)} 파트너 발사`;
         }
         const list = document.querySelector(`[data-control-list="${player}"]`);
         if (!list) continue;
@@ -768,12 +767,6 @@
           player.jumpBufferTimer = 0;
           this.audio.beep(player.id === 1 ? 510 : 580, 0.06, "triangle");
         }
-        if (this.input.wasPressed(controls.down)) {
-          player.dropTimer = 0.18;
-          player.y += 8;
-          player.onGround = false;
-        }
-        player.dropTimer = Math.max(0, player.dropTimer - delta);
         player.vy += PHYSICS.gravity * delta;
 
         const previousX = player.x;
@@ -841,7 +834,7 @@
       for (const solid of this.getSolids()) {
         if (!intersects(player.bounds, solid)) continue;
         const wasAbove = previousY + player.height <= solid.y + 8;
-        if (player.vy >= 0 && wasAbove && (player.dropTimer <= 0 || solid.kind === "ground")) {
+        if (player.vy >= 0 && wasAbove) {
           player.y = solid.y - player.height;
           player.vy = 0;
           player.onGround = true;
