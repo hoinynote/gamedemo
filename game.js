@@ -360,6 +360,64 @@
     }
   }
 
+  class CampaignProgressStore {
+    static get key() { return "ropebound-campaign-progress:v1"; }
+
+    static defaults() {
+      return { version: 1, clearedStageIds: [], bonusStageUnlocked: false };
+    }
+
+    static sanitize(progress) {
+      if (!progress || progress.version !== 1 || !Array.isArray(progress.clearedStageIds)
+        || typeof progress.bonusStageUnlocked !== "boolean") return this.defaults();
+      return {
+        version: 1,
+        clearedStageIds: [...new Set(progress.clearedStageIds.filter((id) => Number.isInteger(id) && id >= 0 && id < STAGES.length))],
+        bonusStageUnlocked: progress.bonusStageUnlocked,
+      };
+    }
+
+    static load() {
+      try {
+        const raw = window.localStorage.getItem(this.key);
+        return raw ? this.sanitize(JSON.parse(raw)) : this.defaults();
+      } catch (error) {
+        console.warn("Campaign progress could not be loaded.", error);
+        return this.defaults();
+      }
+    }
+
+    static save(progress) {
+      const sanitized = this.sanitize(progress);
+      try {
+        window.localStorage.setItem(this.key, JSON.stringify(sanitized));
+        return sanitized;
+      } catch (error) {
+        console.warn("Campaign progress could not be saved.", error);
+        return this.load();
+      }
+    }
+
+    static clear() {
+      try { window.localStorage.removeItem(this.key); } catch (error) { /* no-op */ }
+      return this.defaults();
+    }
+
+    static clearStage(stageId) {
+      const progress = this.load();
+      if (Number.isInteger(stageId) && stageId >= 0 && stageId < STAGES.length) {
+        progress.clearedStageIds.push(stageId);
+      }
+      return this.save(progress);
+    }
+
+    static unlockBonusStage() {
+      const progress = this.load();
+      progress.bonusStageUnlocked = true;
+      return this.save(progress);
+    }
+  }
+
   class HistoryPauseController {
     constructor(game) {
       this.game = game;
@@ -425,6 +483,9 @@
       this.audio = new AudioManager();
       this.mode = "menu";
       this.stageIndex = 0;
+      this.runSource = "campaign";
+      this.campaignProgress = CampaignProgressStore.load();
+      this.savedCheckpoint = CheckpointStore.load();
       this.stage = null;
       this.stageState = null;
       this.players = [];
@@ -440,15 +501,20 @@
       this.bindUI();
       window.addEventListener("keydown", (event) => this.handleGlobalInput(event));
       this.historyController.install();
-      this.loadStage(0);
+      this.loadStage(this.savedCheckpoint ? this.savedCheckpoint.stageIndex : 0);
       this.renderControls();
-      const checkpoint = CheckpointStore.load();
-      if (checkpoint) this.restore(checkpoint);
+      if (this.savedCheckpoint) {
+        this.restore(this.savedCheckpoint);
+        this.mode = "menu";
+        this.pauseReason = "";
+      }
       requestAnimationFrame((timestamp) => this.frame(timestamp));
     }
 
     bindUI() {
-      document.querySelector("#start-button").addEventListener("click", () => this.startNewGame());
+      document.querySelector("#start-button")?.addEventListener("click", () => this.startNewGame());
+      document.querySelector("#new-game-button")?.addEventListener("click", () => this.startNewGame());
+      document.querySelector("#continue-run-button")?.addEventListener("click", () => this.continueSavedRun());
       document.querySelector("#continue-button").addEventListener("click", () => this.advanceStage());
       document.querySelector("#controls-button").addEventListener("click", () => this.openControls());
       document.querySelector("#controls-back-button").addEventListener("click", () => this.closeControls());
@@ -468,7 +534,10 @@
       }
       if (event.code === "Enter") {
         this.audio.unlock();
-        if (this.mode === "menu") this.startNewGame();
+        if (this.mode === "menu") {
+          if (this.savedCheckpoint) this.continueSavedRun();
+          else this.startNewGame();
+        }
         else if (this.mode === "paused") this.resume();
         else if (this.mode === "won") this.advanceStage();
       }
@@ -608,16 +677,65 @@
     startNewGame() {
       this.audio.unlock();
       CheckpointStore.clear();
+      this.savedCheckpoint = null;
+      this.runSource = "campaign";
       this.stageIndex = 0;
       this.loadStage(this.stageIndex);
       this.mode = "playing";
       this.historyController.arm();
     }
 
+    continueSavedRun() {
+      const checkpoint = CheckpointStore.load();
+      if (!checkpoint) {
+        this.savedCheckpoint = null;
+        this.renderUI();
+        return;
+      }
+      this.audio.unlock();
+      this.runSource = "campaign";
+      this.savedCheckpoint = checkpoint;
+      this.restore(checkpoint);
+      this.mode = checkpoint.mode === "won" ? "won" : "playing";
+      this.pauseReason = "";
+      this.lastFrameAt = performance.now();
+      this.historyController.arm();
+    }
+
+    startStageFromCard(stageId) {
+      if (!Number.isInteger(stageId) || !this.isStageUnlocked(stageId)) return;
+      this.audio.unlock();
+      this.runSource = "replay";
+      this.loadStage(stageId);
+      this.mode = "playing";
+      this.historyController.arm();
+    }
+
+    isStageUnlocked(stageId) {
+      if (!Number.isInteger(stageId) || stageId < 0 || stageId >= STAGES.length) return false;
+      if (stageId === 0) return true;
+      if (stageId === 3) return this.campaignProgress.bonusStageUnlocked;
+      return Array.from({ length: stageId }, (_, id) => id)
+        .every((id) => this.campaignProgress.clearedStageIds.includes(id));
+    }
+
+    getStageProgressStatus(stageId) {
+      if (this.campaignProgress.clearedStageIds.includes(stageId)) return "completed";
+      if (!this.isStageUnlocked(stageId)) return "locked";
+      if (stageId === 3) return "bonus-available";
+      const currentStage = [0, 1, 2].find((id) => (
+        this.isStageUnlocked(id) && !this.campaignProgress.clearedStageIds.includes(id)
+      ));
+      return stageId === currentStage ? "current" : "locked";
+    }
+
     advanceStage() {
       if (this.mode !== "won") return;
-      if (this.stageIndex >= STAGES.length - 1) {
-        CheckpointStore.clear();
+      if (this.stageIndex >= 2) {
+        if (this.runSource === "campaign") {
+          CheckpointStore.clear();
+          this.savedCheckpoint = null;
+        }
         this.mode = "menu";
         this.loadStage(0);
         return;
@@ -678,8 +796,9 @@
     }
 
     saveCheckpoint() {
-      if (!this.stage || !this.players.length) return;
+      if (this.runSource === "replay" || !this.stage || !this.players.length) return;
       CheckpointStore.save(this.serialize());
+      this.savedCheckpoint = CheckpointStore.load();
     }
 
     serialize() {
@@ -806,6 +925,11 @@
         this.elapsed += delta;
         this.updateMovingPlatforms();
         this.updateObjects(delta);
+        if (!this.campaignProgress.bonusStageUnlocked && this.stage.switches.some((item) => (
+          item.unlockBonusStage && this.stageState.switches[item.id]
+        ))) {
+          this.campaignProgress = CampaignProgressStore.unlockBonusStage();
+        }
         this.updatePlayers(delta);
         this.updateRopes(delta);
         this.checkHazards();
@@ -1034,6 +1158,7 @@
       if (this.mode !== "playing") return;
       if (this.players.every((player) => intersects(player.bounds, this.stage.exit))) {
         this.mode = "won";
+        this.campaignProgress = CampaignProgressStore.clearStage(this.stageIndex);
         this.audio.clear();
         this.saveCheckpoint();
       }
@@ -1248,10 +1373,19 @@
         document.querySelector("#pause-message").textContent = messages[this.pauseReason] || "진행 상태를 저장했습니다.";
       }
       if (this.mode === "won") {
-        const finalStage = this.stageIndex >= STAGES.length - 1;
-        document.querySelector("#clear-title").textContent = finalStage ? "모든 구역을 통과했어요!" : `${this.stage.name} 클리어!`;
-        document.querySelector("#clear-message").textContent = finalStage ? "두 사람의 호흡이 완벽했습니다." : "다음 구역에는 더 긴 당김이 기다립니다.";
-        document.querySelector("#continue-button").innerHTML = finalStage ? "처음부터 다시 <span>Enter</span>" : "다음 스테이지 <span>Enter</span>";
+        const finalCampaignStage = this.stageIndex === 2;
+        const bonusStage = this.stageIndex === 3;
+        document.querySelector("#clear-title").textContent = finalCampaignStage
+          ? "캠페인 클리어!"
+          : `${this.stage.name} 클리어!`;
+        document.querySelector("#clear-message").textContent = bonusStage
+          ? "숨은 협동 릴레이를 완주했습니다."
+          : finalCampaignStage
+            ? "세 구역을 모두 통과했습니다."
+            : "다음 구역에는 더 긴 당김이 기다립니다.";
+        document.querySelector("#continue-button").innerHTML = this.stageIndex >= 2
+          ? "메인 화면 <span>Enter</span>"
+          : "다음 스테이지 <span>Enter</span>";
       }
     }
   }

@@ -1,6 +1,6 @@
-# Task: T02 Campaign Progress and Checkpoints
+﻿# Task: T02 Campaign Progress and Checkpoints
 
-## Status: pending
+## Status: done
 
 ## Goal
 Persist stage clears and bonus unlocks separately from the run checkpoint, enforce normal-stage order, and allow replays without replacing the saved Continue run.
@@ -63,6 +63,7 @@ Persist stage clears and bonus unlocks separately from the run checkpoint, enfor
     - support replay without replacing saved campaign run
 
 ## Progress
-- [ ] 구현 완료
-- [ ] 검증 통과
+- [x] 구현 완료
+- [x] 구문 검사, 미러 일치, 공백 검증 통과
 - commit: pending
+
