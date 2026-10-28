@@ -1,16 +1,16 @@
 ﻿# Current Context
 
 ## Active Plan
-[One-Way Partner Throw](./plans/2026-10-28-one-way-partner-throw.md)
+[Rope Throw Direction](./plans/2026-10-28-rope-throw-direction.md)
 
 ## Active Phase
-[P01 Target-Only Launch](./phases/2026-10-28-one-way-partner-throw/P01-target-only-launch/phase.md)
+[P01 Pull Direction](./phases/2026-10-28-rope-throw-direction/P01-pull-direction/phase.md)
 
 ## Active Task
 - None — all planned tasks are complete.
 
 ## Status
-- The thrower receives no launch impulse; only the connected partner is launched. `node --check game.js` and the target-only force inspection passed.
+- Partner launch now follows the rope pull direction toward the thrower at 900px/s. `node --check game.js` and the launch-vector inspection passed.
 
 ## Next Step (IMPORTANT)
 All tasks in this plan are complete.

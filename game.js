@@ -11,7 +11,7 @@
     friction: 0.78,
     jumpSpeed: 650,
     ropeTensionAcceleration: 7,
-    ropeLaunchImpulse: 1000,
+    ropeLaunchImpulse: 900,
     ropeLaunchDuration: 0.35,
     playerWidth: 24,
     playerHeight: 38,
@@ -503,7 +503,7 @@
       }
       const ropeHelp = document.querySelector("#rope-control-help");
       if (ropeHelp) {
-        ropeHelp.textContent = `방향 키와 로프 키를 함께 누르면 8방향으로 발사합니다. 방향 입력이 없으면 바라보는 쪽으로 발사합니다. 줄이 연결된 상태에서 파트너 발사 키(${controlCodeLabel(this.controls.p1.boost)} / ${controlCodeLabel(this.controls.p2.boost)})를 누르면 파트너만 줄 바깥 방향으로 날아가고, 줄은 자동 해제됩니다.`;
+        ropeHelp.textContent = `방향 키와 로프 키를 함께 누르면 8방향으로 발사합니다. 방향 입력이 없으면 바라보는 쪽으로 발사합니다. 줄이 연결된 상태에서 파트너 발사 키(${controlCodeLabel(this.controls.p1.boost)} / ${controlCodeLabel(this.controls.p2.boost)})를 누르면 파트너만 발사자 쪽, 줄을 당기는 방향으로 날아가고 줄은 자동 해제됩니다.`;
       }
     }
 
@@ -871,8 +871,8 @@
           const dy = (targetCenter.y - ownerCenter.y) / Math.max(rope.currentLength, 1);
           rope.boostLevel = 0;
           if (this.input.wasPressed(controls.boost)) {
-            target.vx += dx * PHYSICS.ropeLaunchImpulse;
-            target.vy += dy * PHYSICS.ropeLaunchImpulse;
+            target.vx -= dx * PHYSICS.ropeLaunchImpulse;
+            target.vy -= dy * PHYSICS.ropeLaunchImpulse;
             owner.launchTimer = 0;
             target.launchTimer = PHYSICS.ropeLaunchDuration;
             for (const connectedRope of this.ropes) {
