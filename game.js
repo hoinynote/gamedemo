@@ -11,7 +11,7 @@
     friction: 0.78,
     jumpSpeed: 650,
     ropeTensionAcceleration: 7,
-    ropeBoostAcceleration: 360,
+    ropeBoostAcceleration: 2400,
     playerWidth: 24,
     playerHeight: 38,
   };
