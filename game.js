@@ -119,6 +119,7 @@
   const STAGES = [
     {
       id: 0,
+      theme: { skyTop: "#f7d99a", skyMid: "#a9e6d1", skyBottom: "#79c3aa", far: "#72b79e", near: "#4d947d", accent: "#fff0aa", ground: "#356d5d", platform: "#4c896f", platformTop: "#b4d98f", moving: "#68b9a3" },
       name: "첫 연결",
       card: {
         name: "첫 연결",
@@ -147,6 +148,7 @@
     },
     {
       id: 1,
+      theme: { skyTop: "#83d9ee", skyMid: "#b7eee1", skyBottom: "#f6d99d", far: "#77c8c2", near: "#398c91", accent: "#fff0a6", ground: "#28666d", platform: "#39878a", platformTop: "#afe0b1", moving: "#56afb0" },
       name: "엇갈린 발판",
       card: {
         name: "엇갈린 발판",
@@ -190,6 +192,7 @@
     },
     {
       id: 2,
+      theme: { skyTop: "#41558f", skyMid: "#8b83be", skyBottom: "#f3aa83", far: "#7477a9", near: "#4d5682", accent: "#83f2d1", ground: "#343f69", platform: "#475785", platformTop: "#b6a7e0", moving: "#668bc0" },
       name: "마지막 당김",
       card: {
         name: "마지막 당김",
@@ -236,6 +239,7 @@
     },
     {
       id: 3,
+      theme: { skyTop: "#c8b8f0", skyMid: "#f0c4df", skyBottom: "#ffe0a1", far: "#ad91c8", near: "#766492", accent: "#fff0b5", ground: "#574b78", platform: "#756395", platformTop: "#e3b6cf", moving: "#a88bc4" },
       name: "하늘 릴레이",
       card: {
         name: "하늘 릴레이",
@@ -1172,13 +1176,14 @@
     }
 
     render() {
+      const theme = this.stage.theme || STAGES[0].theme;
       const sky = ctx.createLinearGradient(0, 0, 0, VIEW.height);
-      sky.addColorStop(0, "#101a3e");
-      sky.addColorStop(0.58, "#1a2850");
-      sky.addColorStop(1, "#0e172d");
+      sky.addColorStop(0, theme.skyTop);
+      sky.addColorStop(0.58, theme.skyMid);
+      sky.addColorStop(1, theme.skyBottom);
       ctx.fillStyle = sky;
       ctx.fillRect(0, 0, VIEW.width, VIEW.height);
-      this.drawBackground();
+      this.drawBackground(theme);
       ctx.save();
       ctx.translate(-this.cameraX, 0);
       this.drawWorld();
@@ -1188,25 +1193,80 @@
       this.drawHud();
     }
 
-    drawBackground() {
+    drawBackground(theme = this.stage.theme || STAGES[0].theme) {
       ctx.save();
-      ctx.globalAlpha = 0.35;
-      for (let index = 0; index < 9; index += 1) {
-        const x = (index * 180 - this.cameraX * 0.18) % (VIEW.width + 220) - 110;
-        const y = 115 + (index % 3) * 54;
-        ctx.fillStyle = index % 2 ? "#8c9cff" : "#6edbd0";
-        ctx.beginPath();
-        ctx.arc(x, y, 2 + (index % 3), 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.fillStyle = "#111c39";
+      const parallax = this.cameraX * 0.18;
+      ctx.globalAlpha = 0.76;
+      ctx.fillStyle = theme.accent;
       ctx.beginPath();
-      ctx.moveTo(0, 390);
-      for (let x = 0; x <= VIEW.width; x += 80) ctx.lineTo(x, 330 + ((x / 80) % 3) * 25);
-      ctx.lineTo(VIEW.width, VIEW.height);
-      ctx.lineTo(0, VIEW.height);
-      ctx.closePath();
+      ctx.arc(VIEW.width * 0.79, 94, 30, 0, Math.PI * 2);
       ctx.fill();
+
+      // Repeating screen-space silhouettes drift slower than the level.
+      for (const layer of [
+        { color: theme.far, base: 365, amplitude: 45, step: 280, shift: parallax },
+        { color: theme.near, base: 430, amplitude: 42, step: 340, shift: parallax * 1.65 },
+      ]) {
+        ctx.fillStyle = layer.color;
+        const offset = ((layer.shift % layer.step) + layer.step) % layer.step;
+        for (let x = -layer.step - offset; x < VIEW.width + layer.step; x += layer.step) {
+          ctx.beginPath();
+          ctx.moveTo(x, VIEW.height);
+          ctx.lineTo(x, layer.base);
+          if (this.stage.id === 2) {
+            ctx.lineTo(x + layer.step * 0.28, layer.base - layer.amplitude);
+            ctx.lineTo(x + layer.step * 0.58, layer.base + 4);
+            ctx.lineTo(x + layer.step * 0.82, layer.base - layer.amplitude * 0.7);
+          } else {
+            ctx.quadraticCurveTo(x + layer.step * 0.27, layer.base - layer.amplitude, x + layer.step * 0.5, layer.base - 8);
+            ctx.quadraticCurveTo(x + layer.step * 0.78, layer.base - layer.amplitude * 0.72, x + layer.step, layer.base);
+          }
+          ctx.lineTo(x + layer.step, VIEW.height);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+
+      if (this.stage.id === 3) {
+        ctx.globalAlpha = 0.34;
+        ctx.fillStyle = theme.far;
+        for (const anchor of [145, 690]) {
+          const x = anchor - (parallax * 0.35 % 960);
+          ctx.beginPath();
+          ctx.arc(x, 388, 48, Math.PI, 0);
+          ctx.lineTo(x + 48, 426);
+          ctx.lineTo(x - 48, 426);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillRect(x - 56, 420, 112, 8);
+          ctx.strokeStyle = theme.accent;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(x, 389, 20, Math.PI, 0);
+          ctx.stroke();
+        }
+      }
+
+      // Accent marks add texture without obscuring player and platform silhouettes.
+      ctx.globalAlpha = 0.42;
+      ctx.strokeStyle = theme.accent;
+      ctx.lineWidth = 2;
+      for (let index = 0; index < 6; index += 1) {
+        const x = ((index * 193 - parallax * 0.55) % (VIEW.width + 120) + VIEW.width + 120) % (VIEW.width + 120) - 60;
+        const y = 145 + (index % 3) * 42;
+        ctx.beginPath();
+        if (this.stage.id === 1) {
+          ctx.moveTo(x - 18, y);
+          ctx.quadraticCurveTo(x, y + 5, x + 18, y);
+          ctx.moveTo(x - 12, y + 8);
+          ctx.quadraticCurveTo(x, y + 12, x + 12, y + 8);
+        } else if (this.stage.id === 2) {
+          ctx.arc(x, y + 30, 30 + (index % 2) * 12, Math.PI * 1.1, Math.PI * 1.85);
+        } else {
+          ctx.arc(x, y, 2 + (index % 3), 0, Math.PI * 2);
+        }
+        ctx.stroke();
+      }
       ctx.restore();
     }
 
@@ -1221,12 +1281,13 @@
     }
 
     drawPlatform(item, moving = false) {
-      ctx.fillStyle = moving ? "#586fc2" : item.kind === "ground" ? "#263a68" : "#334b82";
+      const theme = this.stage.theme || STAGES[0].theme;
+      ctx.fillStyle = moving ? theme.moving : item.kind === "ground" ? theme.ground : theme.platform;
       ctx.fillRect(item.x, item.y, item.w, item.h);
-      ctx.fillStyle = moving ? "#87a0ff" : "#6d8edb";
+      ctx.fillStyle = theme.platformTop;
       ctx.fillRect(item.x, item.y, item.w, 4);
       if (moving) {
-        ctx.fillStyle = "rgba(145, 160, 255, 0.22)";
+        ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
         ctx.fillRect(item.x + 8, item.y + 8, item.w - 16, 3);
       }
     }

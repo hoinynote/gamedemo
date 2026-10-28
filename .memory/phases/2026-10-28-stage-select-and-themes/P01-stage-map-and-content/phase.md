@@ -6,9 +6,9 @@
 | T01 | `done ✅` | Add stage metadata, throw-required puzzles, a hidden Stage 2 switch, and relay bonus stage. | [T01](./T01-stage-content-and-throw-puzzles.md) |
 | T02 | `done ✅` | Persist campaign progress, enforce unlocks, and protect Continue saves during replays. | [T02](./T02-campaign-progress-and-checkpoints.md) |
 | T03 | `done ✅` | Build a responsive connected stage map with progress and run controls. | [T03](./T03-entry-screen-stage-map.md) |
-| T04 | `in_progress 🔵` | Render meadow, coastal ruins, aurora canyon, and bonus-stage palettes. | [T04](./T04-stage-background-themes.md) |
+| T04 | `done` | Render meadow, coastal ruins, aurora canyon, and bonus-stage palettes. | [T04](./T04-stage-background-themes.md) |
 
 ## Progress
-- done: 3/4 (active: T04)
+- done: 4/4 (phase complete)
 
 

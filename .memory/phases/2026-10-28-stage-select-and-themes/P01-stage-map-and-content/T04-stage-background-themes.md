@@ -1,6 +1,6 @@
 # Task: T04 Stage Background Themes
 
-## Status: pending
+## Status: done
 
 ## Goal
 Replace the shared dark mountain backdrop with four distinct sky gradients and parallax silhouettes.
@@ -53,6 +53,7 @@ Replace the shared dark mountain backdrop with four distinct sky gradients and p
     - render stage-aware skies, parallax scenery, and platform colors
 
 ## Progress
-- [ ] 구현 완료
-- [ ] 검증 통과
-- commit: pending
+- [x] Implementation complete
+- [x] Validation passed: both Node syntax checks, four-palette/theme-render assertions, SHA-256 script mirror check, and `git diff --check`.
+- Interactive camera pan and in-browser contrast were not manually exercised.
+- commit: included in this task commit

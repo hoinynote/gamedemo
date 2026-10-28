@@ -68,4 +68,4 @@ Replace the simple entry panel with a responsive route map that explains stages 
 - [x] Implementation complete
 - [x] Validation passed: both Node syntax checks, SHA-256 mirror checks, `git diff --check`, and headless Edge DOM inspection for all four cards and Continue/New Game visibility.
 - Interactive play and narrow viewport were not manually exercised.
-- commit: pending
+- commit: 8db1ecb
