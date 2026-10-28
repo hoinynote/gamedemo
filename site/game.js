@@ -486,6 +486,7 @@
       this.runSource = "campaign";
       this.campaignProgress = CampaignProgressStore.load();
       this.savedCheckpoint = CheckpointStore.load();
+      this.menuRenderKey = null;
       this.stage = null;
       this.stageState = null;
       this.players = [];
@@ -533,6 +534,7 @@
         return;
       }
       if (event.code === "Enter") {
+        if (event.target instanceof HTMLElement && event.target.closest("button, summary")) return;
         this.audio.unlock();
         if (this.mode === "menu") {
           if (this.savedCheckpoint) this.continueSavedRun();
@@ -1358,10 +1360,86 @@
       document.querySelector(id).classList.toggle("visible", visible);
     }
 
+    renderStageMap(checkpoint = this.savedCheckpoint) {
+      const map = document.querySelector("#stage-map");
+      if (!map) return;
+      map.replaceChildren();
+      const statusLabels = {
+        completed: "클리어",
+        current: "현재 도전",
+        locked: "잠김",
+        "bonus-available": "보너스 해제",
+      };
+
+      for (const stage of STAGES) {
+        const state = this.getStageProgressStatus(stage.id);
+        const node = document.createElement("div");
+        node.className = "stage-route-node";
+        node.setAttribute("role", "listitem");
+        if (stage.id === 3) node.dataset.bonus = "true";
+
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "stage-card";
+        card.dataset.stageId = String(stage.id);
+        card.dataset.state = state;
+        card.disabled = state === "locked";
+        card.setAttribute("aria-disabled", String(card.disabled));
+
+        const title = document.createElement("strong");
+        title.className = "stage-card-title";
+        title.textContent = stage.card.name;
+        const objective = document.createElement("span");
+        objective.className = "stage-card-objective";
+        objective.textContent = stage.card.objective;
+        const gimmick = document.createElement("span");
+        gimmick.className = "stage-card-gimmick";
+        gimmick.textContent = stage.card.gimmick;
+        const meta = document.createElement("span");
+        meta.className = "stage-card-meta";
+        meta.textContent = "난이도 " + stage.card.difficulty + "/5 · 약 " + stage.card.estimatedMinutes + "분";
+        const status = document.createElement("span");
+        status.className = "stage-card-status";
+        status.textContent = statusLabels[state];
+
+        card.setAttribute("aria-label", title.textContent + ". " + objective.textContent + ". " + status.textContent + ".");
+        card.append(title, objective, gimmick, meta, status);
+        if (state === "locked") {
+          const hint = document.createElement("span");
+          hint.className = "stage-card-hint";
+          hint.textContent = stage.id === 3
+            ? "2스테이지에서 파트너를 던져 숨겨진 높은 스위치를 누르세요."
+            : "이전 스테이지 출구에 도착하면 열립니다.";
+          card.append(hint);
+        }
+        card.addEventListener("click", () => this.startStageFromCard(stage.id));
+        node.append(card);
+        map.append(node);
+      }
+
+      const continueButton = document.querySelector("#continue-run-button");
+      const status = document.querySelector("#continue-run-status");
+      if (continueButton) continueButton.hidden = !checkpoint;
+      if (status) {
+        status.textContent = checkpoint
+          ? "저장된 " + STAGES[checkpoint.stageIndex].card.name + " 진행 지점이 있습니다."
+          : "저장된 이어하기가 없습니다.";
+      }
+    }
+
     renderUI() {
       this.showOverlay("#menu-screen", this.mode === "menu");
       this.showOverlay("#pause-screen", this.mode === "paused" && !this.controlsOpen);
       this.showOverlay("#clear-screen", this.mode === "won");
+      if (this.mode === "menu") {
+        const checkpoint = CheckpointStore.load();
+        this.savedCheckpoint = checkpoint;
+        const renderKey = JSON.stringify({ progress: this.campaignProgress, savedAt: checkpoint?.savedAt || null });
+        if (renderKey !== this.menuRenderKey) {
+          this.renderStageMap(checkpoint);
+          this.menuRenderKey = renderKey;
+        }
+      }
       if (this.mode === "paused") {
         const messages = {
           "browser-back": "뒤로가기를 눌러 게임을 멈췄습니다. 진행 상태를 저장했어요.",

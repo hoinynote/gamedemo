@@ -13,22 +13,38 @@
 
         <section id="menu-screen" class="overlay visible" aria-live="polite">
           <p class="eyebrow">터그메이트</p>
-          <h1>함께 당기고, 함께 도착하세요</h1>
-          <p class="lead">두 명이 서로에게 로프를 발사하고 장력을 이용해 절벽과 퍼즐을 넘어갑니다.</p>
-          <div class="controls-grid">
-            <div class="control-card player-one">
-              <strong>PLAYER 1</strong>
-              <span id="controls-summary-p1"></span>
+          <header class="menu-heading">
+            <h1>함께 당기고, 함께 도착하세요</h1>
+            <p class="lead">던지기와 협동 퍼즐로 네 개의 구역을 돌파하세요.</p>
+          </header>
+          <section class="stage-map-panel" aria-labelledby="stage-map-title">
+            <div class="stage-map-heading">
+              <h2 id="stage-map-title">스테이지 진행도</h2>
+              <p>출구에 도착해 다음 구역을 열어보세요.</p>
             </div>
-            <div class="control-card player-two">
-              <strong>PLAYER 2</strong>
-              <span id="controls-summary-p2"></span>
-            </div>
+            <div id="stage-map" class="stage-map" role="list" aria-label="스테이지 진행도"></div>
+          </section>
+          <div class="menu-actions">
+            <button id="continue-run-button" class="primary-button" type="button" hidden>이어하기 <span>Enter</span></button>
+            <button id="new-game-button" class="secondary-button" type="button">새 게임</button>
+            <button id="controls-button" class="secondary-button" type="button">조작 설정</button>
           </div>
-          <p id="rope-control-help" class="hint"></p>
-          <p class="hint"><kbd>R</kbd> 현재 스테이지 재시작</p>
-          <button id="controls-button" class="secondary-button" type="button">조작 설정</button>
-          <button id="start-button" class="primary-button" type="button">게임 시작 <span>Enter</span></button>
+          <p id="continue-run-status" class="menu-status" aria-live="polite"></p>
+          <details class="menu-controls">
+            <summary>조작 방법 보기</summary>
+            <div class="controls-grid">
+              <div class="control-card player-one">
+                <strong>PLAYER 1</strong>
+                <span id="controls-summary-p1"></span>
+              </div>
+              <div class="control-card player-two">
+                <strong>PLAYER 2</strong>
+                <span id="controls-summary-p2"></span>
+              </div>
+            </div>
+            <p id="rope-control-help" class="hint"></p>
+            <p class="hint"><kbd>R</kbd> 현재 스테이지 재시작 · <kbd>Esc</kbd> 일시정지</p>
+          </details>
         </section>
 
         <section id="controls-screen" class="overlay controls-screen" aria-live="polite">

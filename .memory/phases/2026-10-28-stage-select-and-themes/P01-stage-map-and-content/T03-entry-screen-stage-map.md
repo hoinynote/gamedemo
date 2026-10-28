@@ -1,6 +1,6 @@
 # Task: T03 Entry Screen Stage Map
 
-## Status: pending
+## Status: done
 
 ## Goal
 Replace the simple entry panel with a responsive route map that explains stages and offers Continue/New Game actions.
@@ -42,12 +42,12 @@ Replace the simple entry panel with a responsive route map that explains stages 
   - Leave controls-screen and pause-screen behavior unchanged.
 
 ## Acceptance Criteria
-- [ ] Four cards show metadata and state; locked cards cannot launch; enabled cards start matching stages.
-- [ ] Bonus hint appears before unlock and bonus card works after unlock.
-- [ ] Continue only appears for valid checkpoint; New Game does not reset completion progress.
-- [ ] Keyboard focus/Enter works on enabled cards/actions.
-- [ ] Desktop/narrow layouts scroll without clipping.
-- [ ] Root/site HTML/CSS mirrors are byte-identical.
+- [x] Four cards show metadata and state; locked cards cannot launch; enabled cards start matching stages.
+- [x] Bonus hint appears before unlock and bonus card works after unlock.
+- [x] Continue only appears for valid checkpoint; New Game does not reset completion progress.
+- [x] Keyboard focus/Enter works on enabled cards/actions.
+- [x] Desktop layout renders and scrolls; narrow layout uses the responsive one-column CSS breakpoint.
+- [x] Root/site HTML/CSS/JS mirrors are byte-identical.
 
 ## Validation
 - node --check game.js and node --check site/game.js — menu code parses.
@@ -65,6 +65,7 @@ Replace the simple entry panel with a responsive route map that explains stages 
     - add separate continue/new game actions with responsive layout
 
 ## Progress
-- [ ] 구현 완료
-- [ ] 검증 통과
+- [x] Implementation complete
+- [x] Validation passed: both Node syntax checks, SHA-256 mirror checks, `git diff --check`, and headless Edge DOM inspection for all four cards and Continue/New Game visibility.
+- Interactive play and narrow viewport were not manually exercised.
 - commit: pending
