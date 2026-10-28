@@ -1,16 +1,16 @@
 ﻿# Current Context
 
 ## Active Plan
-[Rope Launch Power](./plans/2026-10-28-rope-launch-power.md)
+[Instant Rope Launch](./plans/2026-10-28-instant-rope-launch.md)
 
 ## Active Phase
-[P01 Launch Acceleration](./phases/2026-10-28-rope-launch-power/P01-launch-acceleration/phase.md)
+[P01 Instant Launch](./phases/2026-10-28-instant-rope-launch/P01-instant-launch/phase.md)
 
 ## Active Task
 - None — all planned tasks are complete.
 
 ## Status
-- Held rope boost acceleration is 4800, twice the prior value. Syntax and force-value checks passed.
+- The configured boost key now launches the attached partner with recoil and releases connected ropes. `node --check game.js` and the launch-path inspection passed.
 
 ## Next Step (IMPORTANT)
 All tasks in this plan are complete.

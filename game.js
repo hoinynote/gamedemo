@@ -11,7 +11,7 @@
     friction: 0.78,
     jumpSpeed: 650,
     ropeTensionAcceleration: 7,
-    ropeBoostAcceleration: 4800,
+    ropeLaunchImpulse: 1000,
     playerWidth: 24,
     playerHeight: 38,
   };
@@ -22,7 +22,7 @@
   });
   const CONTROL_ACTIONS = ["left", "right", "jump", "down", "rope", "boost"];
   const CONTROL_ACTION_LABELS = {
-    left: "왼쪽 이동", right: "오른쪽 이동", jump: "점프", down: "플랫폼 통과", rope: "로프 발사·해제", boost: "당기기 강화",
+    left: "왼쪽 이동", right: "오른쪽 이동", jump: "점프", down: "플랫폼 통과", rope: "로프 발사·해제", boost: "파트너 발사",
   };
   const RESERVED_CONTROL_CODES = new Set(["Enter", "Escape", "Tab", "KeyR", "KeyN"]);
 
@@ -468,7 +468,7 @@
         const summary = document.querySelector(`#controls-summary-${player}`);
         if (summary) {
           const controls = this.controls[player];
-          summary.textContent = `${controlCodeLabel(controls.left)}/${controlCodeLabel(controls.right)} 이동 · ${controlCodeLabel(controls.jump)} 점프 · ${controlCodeLabel(controls.down)} 플랫폼 통과 · ${controlCodeLabel(controls.rope)} 로프 · ${controlCodeLabel(controls.boost)} 당기기`;
+          summary.textContent = `${controlCodeLabel(controls.left)}/${controlCodeLabel(controls.right)} 이동 · ${controlCodeLabel(controls.jump)} 점프 · ${controlCodeLabel(controls.down)} 플랫폼 통과 · ${controlCodeLabel(controls.rope)} 로프 · ${controlCodeLabel(controls.boost)} 파트너 발사`;
         }
         const list = document.querySelector(`[data-control-list="${player}"]`);
         if (!list) continue;
@@ -501,7 +501,7 @@
       }
       const ropeHelp = document.querySelector("#rope-control-help");
       if (ropeHelp) {
-        ropeHelp.textContent = `방향 키와 로프 키를 함께 누르면 8방향으로 발사합니다. 방향 입력이 없으면 바라보는 쪽으로 발사하고, 당기기 키(${controlCodeLabel(this.controls.p1.boost)} / ${controlCodeLabel(this.controls.p2.boost)})를 누르는 동안 힘이 강해집니다.`;
+        ropeHelp.textContent = `방향 키와 로프 키를 함께 누르면 8방향으로 발사합니다. 방향 입력이 없으면 바라보는 쪽으로 발사합니다. 줄이 연결된 상태에서 파트너 발사 키(${controlCodeLabel(this.controls.p1.boost)} / ${controlCodeLabel(this.controls.p2.boost)})를 누르면 파트너가 줄 바깥 방향으로 날아가고, 줄은 자동 해제되며 발사자도 반동을 받습니다.`;
       }
     }
 
@@ -860,12 +860,27 @@
           rope.headY = targetCenter.y;
           rope.currentLength = distance(ownerCenter, targetCenter);
           rope.tension = Math.max(0, rope.currentLength - rope.maxLength);
-          rope.boostLevel = this.input.isDown(controls.boost) ? 1 : 0;
-          if (rope.boostLevel > 0 && rope.tension > 2) this.audio.beep(250, 0.02, "square", 0.012);
-          if (rope.tension > 0 || rope.boostLevel > 0) {
-            const dx = (targetCenter.x - ownerCenter.x) / Math.max(rope.currentLength, 1);
-            const dy = (targetCenter.y - ownerCenter.y) / Math.max(rope.currentLength, 1);
-            const force = (rope.tension * PHYSICS.ropeTensionAcceleration + PHYSICS.ropeBoostAcceleration * rope.boostLevel) * delta;
+          const dx = (targetCenter.x - ownerCenter.x) / Math.max(rope.currentLength, 1);
+          const dy = (targetCenter.y - ownerCenter.y) / Math.max(rope.currentLength, 1);
+          rope.boostLevel = 0;
+          if (this.input.wasPressed(controls.boost)) {
+            owner.vx -= dx * PHYSICS.ropeLaunchImpulse;
+            owner.vy -= dy * PHYSICS.ropeLaunchImpulse;
+            target.vx += dx * PHYSICS.ropeLaunchImpulse;
+            target.vy += dy * PHYSICS.ropeLaunchImpulse;
+            for (const connectedRope of this.ropes) {
+              if (connectedRope.state !== "attached") continue;
+              if (connectedRope.ownerId !== owner.id && connectedRope.targetPlayerId !== owner.id) continue;
+              connectedRope.state = "idle";
+              connectedRope.tension = 0;
+              connectedRope.boostLevel = 0;
+              connectedRope.targetPlayerId = null;
+            }
+            this.audio.boost();
+            continue;
+          }
+          if (rope.tension > 0) {
+            const force = rope.tension * PHYSICS.ropeTensionAcceleration * delta;
             owner.vx += dx * force;
             owner.vy += dy * force;
             target.vx -= dx * force;
