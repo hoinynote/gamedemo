@@ -1,16 +1,18 @@
 ﻿# Current Context
 
 ## Active Plan
-[Stage Select, Themes, and Throw Challenges](./plans/2026-10-28-stage-select-and-themes.md)
+[Company Leaderboard and Visual Redesign](./plans/2026-10-28-company-leaderboard-and-visual-redesign.md)
 
 ## Active Phase
-[P01 Stage Map and Content](./phases/2026-10-28-stage-select-and-themes/P01-stage-map-and-content/phase.md)
+[P01 API and Data](./phases/2026-10-28-company-leaderboard-and-visual-redesign/P01-api-and-data/phase.md)
 
 ## Active Task
-No active task (plan complete)
+[T02 Secure API](./phases/2026-10-28-company-leaderboard-and-visual-redesign/P01-api-and-data/T02-secure-api.md)
 
 ## Status
-- Plan complete: T01 stage puzzles, T02 saved progress, T03 stage map, and T04 stage themes implemented, validated, and committed.
+- Plan created from confirmed company login, ranking, storage, and visual decisions.
+- Completed P01-T01: Functions project, profile schema, and Cosmos NoSQL/Table adapters.
+- Active task: implement tenant-verified profile, progress, clear, leaderboard, and deletion endpoints.
 
 ## Next Step (IMPORTANT)
-All planned tasks are complete. Start a new grill-me/plan for the next feature.
+Read P01-T02 and implement the bearer-token-verified API routes. Keep tenant identity sourced only from a verified Entra access token.
